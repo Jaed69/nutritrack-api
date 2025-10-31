@@ -26,29 +26,32 @@ Guía completa de toda la documentación del proyecto.
 
 ### Documentación Detallada por Módulo
 
-1. **[Autenticación y Seguridad (modules/auth.md)](modules/auth.md)**
-   - Sistema de login y registro
-   - JWT y tokens
-   - Roles y permisos
-   - Endpoints de autenticación
+Organización basada en **User Stories** (25 historias de usuario en total):
 
-2. **[Etiquetas (modules/etiquetas.md)](modules/etiquetas.md)**
-   - Sistema de etiquetado
-   - Asignación a recursos
-   - Búsqueda por etiquetas
-   - Categorización
+1. **[Gestión de Cuentas y Preferencias](modules/cuentas-preferencias.md)** (Pendiente)
+   - US-01 a US-05: Crear cuenta, login, preferencias, perfil de salud
+   - Responsable: Leonel Alzamora
 
-3. **[Perfil de Usuario](modules/perfil-usuario.md)** (Pendiente)
-   - Gestión de perfiles
-   - Información personal
+2. **[Biblioteca de Contenido (Admin)](modules/biblioteca-contenido.md)** (Pendiente)
+   - US-06 a US-10: Etiquetas, ingredientes, ejercicios, comidas, recetas
+   - Responsables: Fabian Rojas, Gonzalo Huaranga, Victor Carranza
 
-4. **[Salud e Historial](modules/salud-historial.md)** (Pendiente)
-   - Perfiles de salud
-   - Historial de medidas
+3. **[Gestor de Catálogo (Admin)](modules/gestor-catalogo.md)** (Pendiente)
+   - US-11 a US-15: Metas del catálogo, actividades, rutinas
+   - Responsables: Gonzalo Huaranga, Victor Carranza
 
-5. **[Infraestructura](modules/infraestructura.md)** (Pendiente)
-   - Configuración general
-   - Manejo de excepciones
+4. **[Exploración y Activación (Cliente)](modules/exploracion-activacion.md)** (Pendiente)
+   - US-16 a US-20: Ver catálogo, activar metas, pausar/reanudar
+   - Responsables: Gonzalo Huaranga, Victor Carranza
+
+5. **[Seguimiento de Progreso (Cliente)](modules/seguimiento-progreso.md)** (Pendiente)
+   - US-21 a US-25: Actividades, mediciones, gráficos, reportes
+   - Responsables: Gonzalo Huaranga, Jhamil Peña, Victor Carranza
+
+### Documentación de Referencia (Técnica)
+
+- **[Autenticación y Seguridad (auth.md)](modules/auth.md)** - Implementación JWT y seguridad
+- **[Sistema de Etiquetas (etiquetas.md)](modules/etiquetas.md)** - Sistema de etiquetado genérico
 
 ### Plantilla para Nuevos Módulos
 

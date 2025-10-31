@@ -116,40 +116,50 @@ La API estará disponible en: `http://localhost:8080`
 
 ## 🧩 Módulos del Sistema
 
-El sistema está dividido en 5 módulos principales:
+El sistema está dividido en 5 módulos principales basados en las User Stories:
 
-### 1️⃣ Módulo de Autenticación y Seguridad
-**Responsable:** [Nombre del desarrollador]
-- Gestión de cuentas de usuario
-- Autenticación JWT
-- Control de roles y permisos
-- **Documentación:** [docs/modules/auth.md](docs/modules/auth.md)
+### 1️⃣ Módulo de Gestión de Cuentas y Preferencias
+**Responsable:** Leonel Alzamora  
+**User Stories:** US-01 a US-05
+- Creación y gestión de cuentas (US-01, US-02)
+- Configuración de unidades de medida (US-03)
+- Edición de perfil de salud (US-04)
+- Eliminación de cuenta (US-05)
+- **Documentación:** [docs/modules/cuentas-preferencias.md](docs/modules/cuentas-preferencias.md)
 
-### 2️⃣ Módulo de Perfil de Usuario
-**Responsable:** [Nombre del desarrollador]
-- Gestión de perfiles
-- Información personal
-- **Documentación:** [docs/modules/perfil-usuario.md](docs/modules/perfil-usuario.md)
+### 2️⃣ Módulo de Biblioteca de Contenido (Admin)
+**Responsables:** Fabian Rojas, Gonzalo Huaranga, Victor Carranza  
+**User Stories:** US-06 a US-10
+- Gestión de etiquetas maestras (US-06)
+- Gestión de ingredientes (US-07)
+- Gestión de ejercicios (US-08)
+- Gestión de comidas (US-09)
+- Gestión de recetas (US-10)
+- **Documentación:** [docs/modules/biblioteca-contenido.md](docs/modules/biblioteca-contenido.md)
 
-### 3️⃣ Módulo de Salud e Historial
-**Responsable:** [Nombre del desarrollador]
-- Perfiles de salud
-- Historial de medidas corporales
-- **Documentación:** [docs/modules/salud-historial.md](docs/modules/salud-historial.md)
+### 3️⃣ Módulo de Gestor de Catálogo (Admin)
+**Responsables:** Gonzalo Huaranga, Victor Carranza  
+**User Stories:** US-11 a US-15
+- Crear y gestionar metas del catálogo (US-11, US-12)
+- Ver y eliminar metas (US-13, US-14)
+- Ensamblar rutinas de ejercicio (US-15)
+- **Documentación:** [docs/modules/gestor-catalogo.md](docs/modules/gestor-catalogo.md)
 
-### 4️⃣ Módulo de Etiquetas
-**Responsable:** [Nombre del desarrollador]
-- Etiquetas de ingredientes
-- Etiquetas de ejercicios
-- Etiquetas de metas y planes
-- **Documentación:** [docs/modules/etiquetas.md](docs/modules/etiquetas.md)
+### 4️⃣ Módulo de Exploración y Activación (Cliente)
+**Responsables:** Gonzalo Huaranga, Victor Carranza  
+**User Stories:** US-16 a US-20
+- Ver catálogo con filtros personalizados (US-16)
+- Ver detalle de metas (US-17)
+- Activar, pausar y gestionar metas (US-18, US-19, US-20)
+- **Documentación:** [docs/modules/exploracion-activacion.md](docs/modules/exploracion-activacion.md)
 
-### 5️⃣ Módulo de Infraestructura y Configuración
-**Responsable:** [Nombre del desarrollador]
-- Configuración general
-- CORS y seguridad global
-- Manejo de excepciones
-- **Documentación:** [docs/modules/infraestructura.md](docs/modules/infraestructura.md)
+### 5️⃣ Módulo de Seguimiento de Progreso (Cliente)
+**Responsables:** Gonzalo Huaranga, Jhamil Peña, Victor Carranza  
+**User Stories:** US-21 a US-25
+- Ver y marcar actividades del plan (US-21, US-22, US-23)
+- Registrar mediciones corporales (US-24)
+- Ver gráficos y reportes de progreso (US-25)
+- **Documentación:** [docs/modules/seguimiento-progreso.md](docs/modules/seguimiento-progreso.md)
 
 ## 📚 Documentación
 
@@ -161,13 +171,13 @@ El sistema está dividido en 5 módulos principales:
 
 ## 👥 Equipo de Desarrollo
 
-| Módulo | Responsable | Email |
-|--------|-------------|-------|
-| Autenticación y Seguridad | [Nombre] | email@example.com |
-| Perfil de Usuario | [Nombre] | email@example.com |
-| Salud e Historial | [Nombre] | email@example.com |
-| Etiquetas | [Nombre] | email@example.com |
-| Infraestructura | [Nombre] | email@example.com |
+| Módulo | Responsable(s) | User Stories | Email |
+|--------|----------------|--------------|-------|
+| Gestión de Cuentas y Preferencias | Leonel Alzamora | US-01 a US-05 | email@example.com |
+| Biblioteca de Contenido (Admin) | Fabian Rojas, Gonzalo Huaranga, Victor Carranza | US-06 a US-10 | email@example.com |
+| Gestor de Catálogo (Admin) | Gonzalo Huaranga, Victor Carranza | US-11 a US-15 | email@example.com |
+| Exploración y Activación | Gonzalo Huaranga, Victor Carranza | US-16 a US-20 | email@example.com |
+| Seguimiento de Progreso | Gonzalo Huaranga, Jhamil Peña, Victor Carranza | US-21 a US-25 | email@example.com |
 
 ## 🤝 Contribuir
 
