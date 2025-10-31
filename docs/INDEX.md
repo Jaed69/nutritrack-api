@@ -70,8 +70,14 @@ Organización basada en **User Stories** (25 historias de usuario en total):
 
 ## 🧪 Testing
 
-- **Guía de Testing** (Pendiente)
-  - Tests unitarios
+- **[Guía de Testing con Postman (testing/POSTMAN_GUIDE.md)](testing/POSTMAN_GUIDE.md)**
+  - Configuración de colecciones por módulo
+  - Environments (Local, Dev, Staging, Prod)
+  - Scripts de automatización
+  - 27 endpoints documentados
+
+- **Guía de Testing Unitario** (Pendiente)
+  - Tests unitarios con JUnit
   - Tests de integración
   - Cobertura de código
   - Mocks y fixtures
@@ -122,18 +128,20 @@ Ver sección de configuración en [DEPLOYMENT_GUIDE.md](deployment/DEPLOYMENT_GU
 
 ## 📖 API Reference
 
-- **Referencia de API** (Pendiente)
-  - Endpoints disponibles
-  - Schemas de request/response
-  - Códigos de error
-  - Ejemplos de uso
+- **[Referencia de API (API_REFERENCE.md)](API_REFERENCE.md)**
+  - 27 endpoints documentados (US-01 a US-25)
+  - Schemas de request/response completos
+  - Códigos HTTP y errores
+  - Ejemplos con curl
+  - Autenticación y headers
+  - Reglas de negocio aplicables
 
 ## 🔍 Búsqueda Rápida
 
 ### Por Tema
 
 | Tema | Documento |
-|------|-----------|
+|------|-----------|  
 | Instalar proyecto | [QUICKSTART.md](QUICKSTART.md) |
 | Crear Pull Request | [CONTRIBUTING.md](../CONTRIBUTING.md) |
 | Configurar seguridad | [modules/auth.md](modules/auth.md) |
@@ -142,8 +150,8 @@ Ver sección de configuración en [DEPLOYMENT_GUIDE.md](deployment/DEPLOYMENT_GU
 | Arquitectura del sistema | [architecture/ARCHITECTURE.md](architecture/ARCHITECTURE.md) |
 | Etiquetas y categorización | [modules/etiquetas.md](modules/etiquetas.md) |
 | Templates de GitHub | [.github/](../.github/) |
-
-### Por Rol
+| **Probar API con Postman** | **[testing/POSTMAN_GUIDE.md](testing/POSTMAN_GUIDE.md)** |
+| **Referencia de API REST** | **[API_REFERENCE.md](API_REFERENCE.md)** |### Por Rol
 
 #### Nuevo Desarrollador
 1. [QUICKSTART.md](QUICKSTART.md) - Configurar proyecto
