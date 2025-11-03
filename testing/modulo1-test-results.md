@@ -84,7 +84,7 @@
 ### 3. US-04: Obtener Mi Perfil
 **Endpoint:** `GET /api/v1/app/profile?email=prueba@nutritrack.com`
 
-> **Nota:** El parámetro `email` es temporal para testing sin JWT. Será removido en v0.2.0 cuando se re-active la seguridad.
+> **Nota:** ✅ La seguridad JWT está activada. Los endpoints requieren autenticación vía header `Authorization: Bearer <token>`.
 
 **Response (200):**
 ```json
@@ -253,7 +253,7 @@ POST /api/v1/auth/login
 
 **Causa:**
 - `AppProfileController` extrae `perfilId` del token JWT
-- Seguridad JWT fue deshabilitada para simplificar testing
+- Seguridad JWT está activada desde v0.2.0
 - Controller aún esperaba token en el header
 
 **Solución Temporal:**
@@ -274,7 +274,7 @@ POST /api/v1/auth/login
 
 ### 📋 Pendiente
 - [ ] Merge de `feature/modulo-1-cuentas-preferencias` a `development`
-- [ ] Re-activar seguridad JWT (remover parámetro `email` temporal)
+- [x] Re-activar seguridad JWT (completado en v0.2.0)
 - [ ] Implementar tests unitarios con JUnit
 - [ ] Implementar tests de integración con Spring Boot Test
 - [ ] Iniciar Módulo 2: Biblioteca de Contenido (Admin)

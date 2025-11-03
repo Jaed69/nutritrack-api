@@ -32,14 +32,23 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .authorizeHttpRequests(auth -> auth
-                        // TODO: Temporal - Seguridad deshabilitada para desarrollo
-                        .anyRequest().permitAll()
+                        // Endpoints públicos - Autenticación
+                        .requestMatchers("/api/auth/**").permitAll()
+                        
+                        // Swagger/OpenAPI - Público
+                        .requestMatchers(
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html"
+                        ).permitAll()
+                        
+                        // Todos los demás endpoints requieren autenticación
+                        .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                );
-                // TODO: Habilitar JWT filter cuando esté listo
-                //.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                )
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

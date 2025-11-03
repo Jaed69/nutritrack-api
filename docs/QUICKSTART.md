@@ -54,9 +54,11 @@ GRANT ALL PRIVILEGES ON DATABASE nutritrack_db TO nutritrack;
 
 ## 🧪 Verificar Instalación
 
-### 1. Health Check (Swagger)
+### 1. Swagger UI (Documentación Interactiva)
 
 Abre tu navegador en: http://localhost:8080/api/v1/swagger-ui/index.html
+
+> ⚠️ **Seguridad JWT Activada:** Todos los endpoints (excepto `/auth/**` y Swagger) requieren autenticación. Usa el botón "Authorize" en Swagger con tu JWT token.
 
 ### 2. Login con Admin
 
@@ -66,9 +68,25 @@ curl http://localhost:8080/api/v1/auth/login \
   -d '{"email":"admin@fintech.com","password":"admin123"}'
 ```
 
+**Respuesta:**
+```json
+{
+  "token": "eyJhbGciOiJIUzI1...",
+  "email": "admin@fintech.com",
+  "nombre": "Admin",
+  "roles": ["ADMIN", "USER"]
+}
+```
+
 **Usuario Admin por defecto:**
 - Email: `admin@fintech.com`
 - Password: `admin123`
+
+**⚠️ Importante:** Guarda el token JWT para usarlo en las siguientes peticiones:
+```bash
+curl http://localhost:8080/api/v1/app/profile \
+  -H "Authorization: Bearer <tu-token-jwt>"
+```
 
 ### 3. Registrar nuevo usuario
 
