@@ -171,9 +171,11 @@ Esto extrae automáticamente el token JWT de las respuestas y lo guarda para usa
 
 Una vez que la aplicación esté ejecutándose:
 
-1. **Swagger UI:** http://localhost:8080/swagger-ui.html
-2. **OpenAPI JSON:** http://localhost:8080/v3/api-docs
-3. **OpenAPI YAML:** http://localhost:8080/v3/api-docs.yaml
+1. **Swagger UI:** http://localhost:8080/api/v1/swagger-ui.html
+2. **OpenAPI JSON:** http://localhost:8080/api/v1/v3/api-docs
+3. **OpenAPI YAML:** http://localhost:8080/api/v1/v3/api-docs.yaml
+
+> **Nota:** Las URLs incluyen el context path `/api/v1` configurado en `application.properties`
 
 ### Características de Swagger UI
 
