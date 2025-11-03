@@ -2,16 +2,18 @@
 
 **URL Swagger UI:** http://localhost:8080/api/v1/swagger-ui/index.html
 
+> ⚠️ **Seguridad JWT Activada:** Todos los endpoints (excepto `/auth/**` y Swagger) requieren autenticación. Usa el botón "Authorize" 🔒 en Swagger UI con tu token JWT.
+
 ## 📋 Estructura Organizada por Módulos
 
-El Swagger ahora está organizado en **5 módulos principales** con sus respectivos sub-módulos, siguiendo el flujo lógico de uso del API.
+El Swagger ahora está organizado en **Autenticación + 5 módulos principales** con sus respectivos sub-módulos, siguiendo el flujo lógico de uso del API.
 
 ---
 
-## 🔵 MÓDULO 1: Autenticación y Perfiles
+## � Autenticación (Sin Módulo)
 
-### 1.1 Autenticación
-**Descripción:** Módulo 1 - Registro, login y gestión de sesiones
+### Autenticación
+**Descripción:** Registro, login y gestión de sesiones - Endpoints públicos
 
 **Endpoints:**
 - `POST /auth/register` - Registrar nuevo usuario
@@ -19,15 +21,27 @@ El Swagger ahora está organizado en **5 módulos principales** con sus respecti
 - `POST /auth/refresh` - Renovar token
 - `GET /auth/profile` - Obtener perfil del usuario autenticado
 
-**Flujo de prueba:**
-1. Registrar un nuevo usuario
-2. Hacer login para obtener el token JWT
-3. Usar el token en los siguientes endpoints (click en "Authorize" 🔒)
+**⚡ Flujo de prueba inicial:**
+1. **Registrar** un nuevo usuario con `POST /auth/register`
+2. **Hacer login** con `POST /auth/login` para obtener el token JWT
+3. **Copiar el token** de la respuesta (campo `token`)
+4. **Autorizar en Swagger:** Click en el botón "Authorize" 🔒 (arriba a la derecha)
+5. **Pegar el token** en el campo "Value" con el formato: `Bearer <tu-token>`
+6. **Usar el token** automáticamente en todos los siguientes endpoints
+
+**Ejemplo de respuesta de login:**
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "email": "usuario@example.com",
+  "nombre": "Juan",
+  "roles": ["USER"]
+}
+```
 
 ---
 
-### 1.2 Gestión de Perfil
-**Descripción:** Módulo 1 - Gestión del perfil personal del usuario
+## 🔵 MÓDULO 1: Perfiles
 
 **Endpoints:**
 - `GET /app/profile` - Obtener mi perfil completo
@@ -38,7 +52,7 @@ El Swagger ahora está organizado en **5 módulos principales** con sus respecti
 
 ---
 
-### 1.3 Administración de Cuentas (ADMIN)
+### 1. Administración de Cuentas (ADMIN)
 **Descripción:** Módulo 1 - Gestión de cuentas de usuario - Solo ADMIN
 
 **Endpoints:**
@@ -51,7 +65,7 @@ El Swagger ahora está organizado en **5 módulos principales** con sus respecti
 
 ---
 
-### 1.4 Administración de Perfiles (ADMIN)
+### 1. Administración de Perfiles (ADMIN)
 **Descripción:** Módulo 1 - Gestión de perfiles de usuario - Solo ADMIN
 
 **Endpoints:**
@@ -65,7 +79,7 @@ El Swagger ahora está organizado en **5 módulos principales** con sus respecti
 
 ## 🟢 MÓDULO 2: Biblioteca de Contenido
 
-### 2.1 Etiquetas
+### 2. Etiquetas
 **Descripción:** Módulo 2 - Gestión de etiquetas para categorización (alergias, dietas, objetivos, etc.)
 
 **Endpoints:**

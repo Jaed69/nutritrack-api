@@ -401,7 +401,7 @@ docker-compose up -d
 
 2. **CORS está habilitado:** La API acepta requests desde `http://localhost:3000` (para frontend React).
 
-3. **Seguridad JWT deshabilitada temporalmente:** Para simplificar el testing inicial. Se re-activará en v0.2.0.
+3. **Seguridad JWT activada:** ✅ Todos los endpoints requieren autenticación mediante token JWT (excepto `/auth/**` y Swagger UI).
 
 4. **Base de datos en Docker:** Puerto 5433 para evitar conflictos con instalaciones locales de PostgreSQL.
 
@@ -411,7 +411,7 @@ docker-compose up -d
 
 1. ✅ Probar todos los endpoints en Postman
 2. ✅ Validar documentación en Swagger UI
-3. ⏳ Re-activar seguridad JWT
+3. ✅ Seguridad JWT activada
 4. ⏳ Agregar tests automatizados con Newman en CI/CD
 5. ⏳ Implementar Módulo 2: Biblioteca de Contenido (Admin)
 
