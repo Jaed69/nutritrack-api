@@ -7,10 +7,10 @@ import com.nutritrack.nutritrackapi.repository.CatalogoActividadRepository;
 import com.nutritrack.nutritrackapi.repository.UsuarioMetaAsignadaRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.hibernate.validator.constraints.UUID;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
