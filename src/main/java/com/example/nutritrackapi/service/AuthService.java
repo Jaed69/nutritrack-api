@@ -1,6 +1,7 @@
 package com.example.nutritrackapi.service;
 
 import com.example.nutritrackapi.dto.AuthResponse;
+import com.example.nutritrackapi.dto.DeleteAccountRequest;
 import com.example.nutritrackapi.dto.LoginRequest;
 import com.example.nutritrackapi.dto.RegisterRequest;
 import com.example.nutritrackapi.model.CuentaAuth;
@@ -106,16 +107,26 @@ public class AuthService {
                 .build();
     }
 
-        @Transactional
-        public void eliminarCuenta(Long userId, String confirmacion) {
-                if (confirmacion == null || !"ELIMINAR".equals(confirmacion)) {
-                        throw new RuntimeException("Confirmación inválida. Debes escribir 'ELIMINAR' para confirmar.");
-                }
+    /**
+     * US-05: Eliminar cuenta
+     * RN05: Requiere confirmación explícita escribiendo "ELIMINAR"
+     * Cascade delete eliminará automáticamente perfil, mediciones, etiquetas, etc.
+     */
+    @Transactional
+    public void eliminarCuenta(String email, DeleteAccountRequest request) {
+        log.info("Eliminando cuenta: {}", email);
 
-                CuentaAuth cuenta = cuentaAuthRepository.findById(userId)
-                                .orElseThrow(() -> new RuntimeException("Cuenta no encontrada"));
-
-                // Eliminar cuenta; la relación con PerfilUsuario está configurada con cascade/orphanRemoval
-                cuentaAuthRepository.delete(cuenta);
+        // Validación ya está en el DTO con @Pattern
+        if (!"ELIMINAR".equals(request.getConfirmacion())) {
+            throw new RuntimeException("Confirmación incorrecta. Debes escribir exactamente 'ELIMINAR'");
         }
+
+        // Buscar y eliminar cuenta (cascade eliminará todo lo relacionado)
+        CuentaAuth cuenta = cuentaAuthRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Cuenta no encontrada"));
+
+        cuentaAuthRepository.delete(cuenta);
+        
+        log.info("Cuenta eliminada exitosamente: {}", email);
+    }
 }

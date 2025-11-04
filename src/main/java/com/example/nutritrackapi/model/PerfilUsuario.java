@@ -6,6 +6,11 @@ import lombok.*;
 
 import java.time.LocalDate;
 
+/**
+ * Entidad PerfilUsuario - Perfil básico del usuario
+ * Relación 1-to-1 con CuentaAuth
+ * Contiene datos personales y preferencias
+ */
 @Entity
 @Table(name = "perfiles_usuario")
 @Getter
@@ -37,6 +42,10 @@ public class PerfilUsuario {
     @JsonIgnore
     private CuentaAuth cuenta;
 
+    @OneToOne(mappedBy = "perfilUsuario", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
+    private UsuarioPerfilSalud perfilSalud;
+
     @PrePersist
     protected void onCreate() {
         if (fechaInicioApp == null) {
@@ -47,7 +56,11 @@ public class PerfilUsuario {
         }
     }
 
+    /**
+     * Unidades de medida para peso
+     */
     public enum UnidadesMedida {
-        KG, LBS
+        KG,   // Kilogramos
+        LBS   // Libras
     }
 }
