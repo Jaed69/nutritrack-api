@@ -66,9 +66,7 @@ public class AuthController {
             Authentication authentication,
             @Valid @RequestBody DeleteAccountRequest request) {
         try {
-            // TEMPORAL: Si no hay autenticación, usar admin
-            String email = (authentication != null) ? authentication.getName() : "admin@nutritrack.com";
-            authService.eliminarCuenta(email, request);
+            authService.eliminarCuenta(authentication.getName(), request);
             return ResponseEntity.ok(ApiResponse.success(null, "Cuenta eliminada exitosamente"));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest()

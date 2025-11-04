@@ -25,15 +25,13 @@ public class PerfilController {
      * RN03: La unidad aplica a todas las vistas
      */
     @PatchMapping("/unidades")
-    @Operation(summary = "Actualizar unidades de medida", 
-               description = "Cambia entre KG y LBS para el peso del usuario")
+    @Operation(summary = "Actualizar unidades de medida",
+               description = "Permite cambiar entre sistema métrico e imperial (US-03)")
     public ResponseEntity<ApiResponse<Void>> actualizarUnidades(
             Authentication authentication,
             @Valid @RequestBody UpdateUnidadesMedidaRequest request) {
         try {
-            // TEMPORAL: Si no hay autenticación, usar admin
-            String email = (authentication != null) ? authentication.getName() : "admin@nutritrack.com";
-            perfilService.actualizarUnidadesMedida(email, request);
+            perfilService.actualizarUnidadesMedida(authentication.getName(), request);
             return ResponseEntity.ok(ApiResponse.success(null, "Unidades actualizadas exitosamente"));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest()
@@ -46,15 +44,13 @@ public class PerfilController {
      * RN04: Usar etiquetas maestras
      */
     @PutMapping("/salud")
-    @Operation(summary = "Actualizar perfil de salud", 
-               description = "Configura objetivos, nivel de actividad, alergias y condiciones médicas")
+    @Operation(summary = "Actualizar perfil de salud",
+               description = "Actualiza objetivo de salud, nivel de actividad y etiquetas de salud (US-04)")
     public ResponseEntity<ApiResponse<PerfilSaludResponse>> actualizarPerfilSalud(
             Authentication authentication,
             @Valid @RequestBody PerfilSaludRequest request) {
         try {
-            // TEMPORAL: Si no hay autenticación, usar admin
-            String email = (authentication != null) ? authentication.getName() : "admin@nutritrack.com";
-            PerfilSaludResponse response = perfilService.actualizarPerfilSalud(email, request);
+            PerfilSaludResponse response = perfilService.actualizarPerfilSalud(authentication.getName(), request);
             return ResponseEntity.ok(ApiResponse.success(response, "Perfil de salud actualizado"));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest()
@@ -66,14 +62,12 @@ public class PerfilController {
      * Obtener perfil de salud actual
      */
     @GetMapping("/salud")
-    @Operation(summary = "Obtener perfil de salud", 
-               description = "Retorna el perfil de salud del usuario con sus etiquetas")
+    @Operation(summary = "Obtener perfil de salud",
+               description = "Retorna el perfil de salud completo del usuario (US-04)")
     public ResponseEntity<ApiResponse<PerfilSaludResponse>> obtenerPerfilSalud(
             Authentication authentication) {
         try {
-            // TEMPORAL: Si no hay autenticación, usar admin
-            String email = (authentication != null) ? authentication.getName() : "admin@nutritrack.com";
-            PerfilSaludResponse response = perfilService.obtenerPerfilSalud(email);
+            PerfilSaludResponse response = perfilService.obtenerPerfilSalud(authentication.getName());
             if (response == null) {
                 return ResponseEntity.ok(ApiResponse.success(null, "Usuario no tiene perfil de salud configurado"));
             }
@@ -109,14 +103,12 @@ public class PerfilController {
      * US-24: Obtener historial de mediciones
      */
     @GetMapping("/mediciones")
-    @Operation(summary = "Obtener historial de mediciones", 
-               description = "Retorna todas las mediciones del usuario ordenadas por fecha")
+    @Operation(summary = "Obtener historial de mediciones",
+               description = "Retorna todas las mediciones del usuario ordenadas por fecha (US-05)")
     public ResponseEntity<ApiResponse<List<HistorialMedidasResponse>>> obtenerHistorial(
             Authentication authentication) {
         try {
-            // TEMPORAL: Si no hay autenticación, usar admin
-            String email = (authentication != null) ? authentication.getName() : "admin@nutritrack.com";
-            List<HistorialMedidasResponse> historial = perfilService.obtenerHistorialMediciones(email);
+            List<HistorialMedidasResponse> historial = perfilService.obtenerHistorialMediciones(authentication.getName());
             return ResponseEntity.ok(ApiResponse.success(historial, "Historial obtenido"));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest()

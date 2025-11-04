@@ -12,9 +12,13 @@ import com.example.nutritrackapi.repository.PerfilUsuarioRepository;
 import com.example.nutritrackapi.repository.RoleRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Collections;
 
 @Service
 @RequiredArgsConstructor
@@ -25,6 +29,7 @@ public class AuthService {
     private final PerfilUsuarioRepository perfilUsuarioRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
@@ -60,9 +65,18 @@ public class AuthService {
 
         log.info("Usuario registrado exitosamente: {}", cuenta.getEmail());
 
-        // TODO: Generar JWT token cuando se implemente JwtService
+        // Generar token JWT
+        final CuentaAuth finalCuenta = cuenta;
+        UserDetails userDetails = User.builder()
+                .username(finalCuenta.getEmail())
+                .password(finalCuenta.getPassword())
+                .authorities(Collections.singletonList(() -> "ROLE_" + finalCuenta.getRole().getTipoRol().name()))
+                .build();
+        
+        String jwtToken = jwtService.generateToken(userDetails);
+
         return AuthResponse.builder()
-                .token("TOKEN_PENDIENTE_JWT")
+                .token(jwtToken)
                 .email(cuenta.getEmail())
                 .nombre(perfil.getNombre())
                 .apellido(perfil.getApellido())
@@ -95,9 +109,18 @@ public class AuthService {
 
         log.info("Login exitoso: {}", cuenta.getEmail());
 
-        // TODO: Generar JWT token cuando se implemente JwtService
+        // Generar token JWT
+        final CuentaAuth finalCuenta = cuenta;
+        UserDetails userDetails = User.builder()
+                .username(finalCuenta.getEmail())
+                .password(finalCuenta.getPassword())
+                .authorities(Collections.singletonList(() -> "ROLE_" + finalCuenta.getRole().getTipoRol().name()))
+                .build();
+        
+        String jwtToken = jwtService.generateToken(userDetails);
+
         return AuthResponse.builder()
-                .token("TOKEN_PENDIENTE_JWT")
+                .token(jwtToken)
                 .email(cuenta.getEmail())
                 .nombre(perfil.getNombre())
                 .apellido(perfil.getApellido())
