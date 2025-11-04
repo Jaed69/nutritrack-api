@@ -28,7 +28,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/ingredientes")
 @RequiredArgsConstructor
-@Tag(name = "Ingredientes", description = "Gestión de ingredientes del sistema")
+@Tag(name = "Módulo 2: Biblioteca de Contenido - Ingredientes", description = "Gestión del catálogo de ingredientes (US-07) - Fabián Rojas")
 @SecurityRequirement(name = "bearerAuth")
 public class IngredienteController {
 

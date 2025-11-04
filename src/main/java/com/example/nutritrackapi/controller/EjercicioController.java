@@ -28,7 +28,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/ejercicios")
 @RequiredArgsConstructor
-@Tag(name = "Ejercicios", description = "Gestión de ejercicios del sistema")
+@Tag(name = "Módulo 2: Biblioteca de Contenido - Ejercicios", description = "Gestión del catálogo de ejercicios (US-08) - Fabián Rojas")
 @SecurityRequirement(name = "bearerAuth")
 public class EjercicioController {
 

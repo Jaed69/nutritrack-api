@@ -30,7 +30,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/comidas")
 @RequiredArgsConstructor
-@Tag(name = "Comidas", description = "Gestión de comidas y recetas del sistema")
+@Tag(name = "Módulo 2: Biblioteca de Contenido - Comidas y Recetas", description = "Gestión del catálogo de comidas y recetas (US-09, US-10) - Fabián Rojas")
 @SecurityRequirement(name = "bearerAuth")
 public class ComidaController {
 

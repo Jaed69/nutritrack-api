@@ -15,7 +15,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/perfil")
 @RequiredArgsConstructor
-@Tag(name = "Perfil", description = "Gestión del perfil de usuario y mediciones")
+@Tag(name = "Módulo 1: Autenticación y Perfil - Gestión de Perfil", description = "Gestión del perfil de usuario y mediciones (US-03, US-04, US-05) - Leonel Alzamora")
 public class PerfilController {
 
     private final PerfilService perfilService;

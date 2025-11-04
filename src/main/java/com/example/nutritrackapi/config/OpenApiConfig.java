@@ -31,7 +31,28 @@ public class OpenApiConfig {
                 .title("NutriTrack API")
                 .version("1.0.0")
                 .contact(contact)
-                .description("API para gestión de nutrición y seguimiento de objetivos de salud")
+                .description("""
+                    API para gestión de nutrición y seguimiento de objetivos de salud.
+                    
+                    ## Organización por Módulos
+                    
+                    ### Módulo 1: Autenticación y Perfil (Leonel Alzamora)
+                    - US-01: Crear cuenta
+                    - US-02: Iniciar sesión
+                    - US-03: Editar perfil
+                    - US-04: Actualizar perfil de salud
+                    - US-05: Eliminar cuenta
+                    
+                    ### Módulo 2: Biblioteca de Contenido - Admin (Fabián Rojas)
+                    - US-06: Gestionar Etiquetas
+                    - US-07: Gestionar Ingredientes
+                    - US-08: Gestionar Ejercicios
+                    - US-09: Gestionar Comidas
+                    - US-10: Gestionar Recetas (ingredientes de comida)
+                    
+                    ## Autenticación
+                    La mayoría de endpoints requieren autenticación JWT. Use el endpoint `/api/v1/auth/login` para obtener el token.
+                    """)
                 .license(mitLicense);
 
         return new OpenAPI()

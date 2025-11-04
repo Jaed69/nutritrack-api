@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/etiquetas")
 @RequiredArgsConstructor
-@Tag(name = "Etiquetas", description = "Gestión de etiquetas del sistema")
+@Tag(name = "Módulo 2: Biblioteca de Contenido - Etiquetas", description = "Gestión del catálogo de etiquetas (US-06) - Fabián Rojas")
 @SecurityRequirement(name = "bearerAuth")
 public class EtiquetaController {
 
