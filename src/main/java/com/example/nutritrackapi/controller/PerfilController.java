@@ -15,7 +15,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/perfil")
 @RequiredArgsConstructor
-@Tag(name = "Módulo 1: Autenticación y Perfil - Gestión de Perfil", description = "Gestión del perfil de usuario y mediciones (US-03, US-04, US-05) - Leonel Alzamora")
+@Tag(name = "Módulo 1: Autenticación y Perfil - Gestión de Perfil", description = "👤 USER - Gestión del perfil de usuario y mediciones (US-03, US-04, US-05) - Leonel Alzamora. SOLO USUARIOS REGULARES.")
 public class PerfilController {
 
     private final PerfilService perfilService;
@@ -25,8 +25,8 @@ public class PerfilController {
      * RN03: La unidad aplica a todas las vistas
      */
     @PatchMapping("/unidades")
-    @Operation(summary = "Actualizar unidades de medida",
-               description = "Permite cambiar entre sistema métrico e imperial (US-03)")
+    @Operation(summary = "👤 USER - Actualizar unidades de medida",
+               description = "Permite cambiar entre sistema métrico e imperial (US-03). SOLO USUARIOS REGULARES.")
     public ResponseEntity<ApiResponse<Void>> actualizarUnidades(
             Authentication authentication,
             @Valid @RequestBody UpdateUnidadesMedidaRequest request) {
@@ -44,8 +44,8 @@ public class PerfilController {
      * RN04: Usar etiquetas maestras
      */
     @PostMapping("/salud")
-    @Operation(summary = "Crear perfil de salud",
-               description = "Crea el perfil de salud del usuario por primera vez (US-04)")
+    @Operation(summary = "👤 USER - Crear perfil de salud",
+               description = "Crea el perfil de salud del usuario por primera vez (US-04). SOLO USUARIOS REGULARES.")
     public ResponseEntity<ApiResponse<PerfilSaludResponse>> crearPerfilSalud(
             Authentication authentication,
             @Valid @RequestBody PerfilSaludRequest request) {

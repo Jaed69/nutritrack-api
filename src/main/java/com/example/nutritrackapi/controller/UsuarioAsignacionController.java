@@ -24,7 +24,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/usuario")
 @RequiredArgsConstructor
-@Tag(name = "Módulo 4: Asignación de Metas", description = "Activar, pausar, reanudar y completar planes/rutinas")
+@Tag(name = "Módulo 4: Asignación de Metas", description = "👤 USER - Activar, pausar, reanudar y completar planes/rutinas asignadas. SOLO USUARIOS REGULARES.")
 @SecurityRequirement(name = "bearerAuth")
 public class UsuarioAsignacionController {
 
@@ -38,8 +38,8 @@ public class UsuarioAsignacionController {
     @PostMapping("/planes/activar")
     @PreAuthorize("hasRole('USER')")
     @Operation(
-        summary = "US-18: Activar plan nutricional",
-        description = "Activa un plan nutricional para el usuario. RN17: No permite duplicados activos. RN18: Propone reemplazo si existe."
+        summary = "👤 USER - US-18: Activar plan nutricional",
+        description = "Activa un plan nutricional para el usuario. RN17: No permite duplicados activos. RN18: Propone reemplazo si existe. SOLO USUARIOS REGULARES."
     )
     public ResponseEntity<ApiResponse<UsuarioPlanResponse>> activarPlan(
             @RequestParam Long perfilUsuarioId,
@@ -54,8 +54,8 @@ public class UsuarioAsignacionController {
     @PatchMapping("/planes/{usuarioPlanId}/pausar")
     @PreAuthorize("hasRole('USER')")
     @Operation(
-        summary = "US-19: Pausar plan nutricional",
-        description = "Pausa un plan activo. RN19: No permite pausar si está completado/cancelado."
+        summary = "👤 USER - US-19: Pausar plan nutricional",
+        description = "Pausa un plan activo. RN19: No permite pausar si está completado/cancelado. SOLO USUARIOS REGULARES."
     )
     public ResponseEntity<ApiResponse<UsuarioPlanResponse>> pausarPlan(
             @RequestParam Long perfilUsuarioId,
@@ -70,8 +70,8 @@ public class UsuarioAsignacionController {
     @PatchMapping("/planes/{usuarioPlanId}/reanudar")
     @PreAuthorize("hasRole('USER')")
     @Operation(
-        summary = "US-19: Reanudar plan nutricional",
-        description = "Reanuda un plan pausado. RN19: Solo permite reanudar planes pausados."
+        summary = "👤 USER - US-19: Reanudar plan nutricional",
+        description = "Reanuda un plan pausado. RN19: Solo permite reanudar planes pausados. SOLO USUARIOS REGULARES."
     )
     public ResponseEntity<ApiResponse<UsuarioPlanResponse>> reanudarPlan(
             @RequestParam Long perfilUsuarioId,

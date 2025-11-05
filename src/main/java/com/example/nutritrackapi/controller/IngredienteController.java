@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springdoc.core.annotations.ParameterObject;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -26,9 +27,9 @@ import org.springframework.web.bind.annotation.*;
  * Solo accesible por administradores (ROLE_ADMIN)
  */
 @RestController
-@RequestMapping("/api/ingredientes")
+@RequestMapping("/api/v1/ingredientes")
 @RequiredArgsConstructor
-@Tag(name = "Módulo 2: Biblioteca de Contenido - Ingredientes", description = "Gestión del catálogo de ingredientes (US-07) - Fabián Rojas")
+@Tag(name = "Módulo 2: Biblioteca de Contenido - Ingredientes", description = "🔐 ADMIN - Gestión del catálogo de ingredientes (US-07) - Fabián Rojas. SOLO ADMINISTRADORES.")
 @SecurityRequirement(name = "bearerAuth")
 public class IngredienteController {
 
@@ -36,7 +37,7 @@ public class IngredienteController {
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Crear nuevo ingrediente", description = "Crea un nuevo ingrediente con información nutricional. Solo ADMIN.")
+    @Operation(summary = "🔐 ADMIN - Crear ingrediente", description = "Crea un nuevo ingrediente con información nutricional. SOLO ADMINISTRADORES.")
     @ApiResponses(value = {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Ingrediente creado exitosamente"),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Datos inválidos o nombre duplicado"),
@@ -54,7 +55,7 @@ public class IngredienteController {
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Obtener ingrediente por ID", description = "Obtiene los detalles de un ingrediente específico")
+    @Operation(summary = "🔐 ADMIN - Obtener ingrediente por ID", description = "Obtiene los detalles de un ingrediente específico. SOLO ADMINISTRADORES.")
     @ApiResponses(value = {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Ingrediente encontrado"),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Ingrediente no encontrado")
@@ -68,9 +69,9 @@ public class IngredienteController {
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Listar todos los ingredientes", description = "Obtiene una lista paginada de todos los ingredientes")
+    @Operation(summary = "🔐 ADMIN - Listar ingredientes", description = "Obtiene una lista paginada de todos los ingredientes. SOLO ADMINISTRADORES.")
     public ResponseEntity<ApiResponse<Page<IngredienteResponse>>> listarIngredientes(
-            @PageableDefault(size = 20) Pageable pageable
+            @ParameterObject @PageableDefault(size = 20) Pageable pageable
     ) {
         Page<IngredienteResponse> ingredientes = ingredienteService.listarIngredientes(pageable);
         return ResponseEntity.ok(ApiResponse.success(ingredientes, "Ingredientes listados exitosamente"));
@@ -81,7 +82,7 @@ public class IngredienteController {
     @Operation(summary = "Buscar ingredientes por nombre", description = "Busca ingredientes que contengan el texto especificado (case-insensitive)")
     public ResponseEntity<ApiResponse<Page<IngredienteResponse>>> buscarPorNombre(
             @Parameter(description = "Texto a buscar en el nombre") @RequestParam String nombre,
-            @PageableDefault(size = 20) Pageable pageable
+            @ParameterObject @PageableDefault(size = 20) Pageable pageable
     ) {
         Page<IngredienteResponse> ingredientes = ingredienteService.buscarPorNombre(nombre, pageable);
         return ResponseEntity.ok(ApiResponse.success(ingredientes, "Búsqueda completada"));
@@ -92,7 +93,7 @@ public class IngredienteController {
     @Operation(summary = "Filtrar por categoría", description = "Obtiene ingredientes de una categoría específica")
     public ResponseEntity<ApiResponse<Page<IngredienteResponse>>> filtrarPorCategoria(
             @Parameter(description = "Categoría del ingrediente") @PathVariable Ingrediente.CategoriaAlimento categoria,
-            @PageableDefault(size = 20) Pageable pageable
+            @ParameterObject @PageableDefault(size = 20) Pageable pageable
     ) {
         Page<IngredienteResponse> ingredientes = ingredienteService.filtrarPorCategoria(categoria, pageable);
         return ResponseEntity.ok(ApiResponse.success(ingredientes, "Ingredientes filtrados exitosamente"));

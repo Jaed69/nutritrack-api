@@ -1,8 +1,12 @@
 package com.example.nutritrackapi.controller;
 
 import com.example.nutritrackapi.dto.*;
+import com.example.nutritrackapi.model.CuentaAuth;
+import com.example.nutritrackapi.repository.CuentaAuthRepository;
+import com.example.nutritrackapi.repository.PerfilUsuarioRepository;
 import com.example.nutritrackapi.service.RegistroService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -22,17 +26,20 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/usuario/registros")
 @RequiredArgsConstructor
-@Tag(name = "Registros", description = "Gestión de registros de comidas y ejercicios")
+@Tag(name = "Módulo 5: Tracking de Actividades", description = "👤 USER - Registro y seguimiento de comidas y ejercicios diarios (US-21, US-22, US-23). SOLO USUARIOS REGULARES.")
+@SecurityRequirement(name = "bearerAuth")
 public class RegistroController {
 
     private final RegistroService registroService;
+    private final CuentaAuthRepository cuentaAuthRepository;
+    private final PerfilUsuarioRepository perfilUsuarioRepository;
 
     // ============================================================
     // US-22: Registrar Comidas y Ejercicios
     // ============================================================
 
     @PostMapping("/comidas")
-    @Operation(summary = "Registrar comida consumida", description = "US-22: Marcar comida como completada")
+    @Operation(summary = "👤 USER - Registrar comida consumida", description = "US-22: Marcar comida como completada. SOLO USUARIOS REGULARES.")
     public ResponseEntity<RegistroComidaResponse> registrarComida(
             @Valid @RequestBody RegistroComidaRequest request,
             Authentication authentication) {
@@ -42,7 +49,7 @@ public class RegistroController {
     }
 
     @PostMapping("/ejercicios")
-    @Operation(summary = "Registrar ejercicio realizado", description = "US-22: Marcar ejercicio como completado")
+    @Operation(summary = "👤 USER - Registrar ejercicio realizado", description = "US-22: Marcar ejercicio como completado. SOLO USUARIOS REGULARES.")
     public ResponseEntity<RegistroEjercicioResponse> registrarEjercicio(
             @Valid @RequestBody RegistroEjercicioRequest request,
             Authentication authentication) {
@@ -56,7 +63,7 @@ public class RegistroController {
     // ============================================================
 
     @GetMapping("/plan/hoy")
-    @Operation(summary = "Ver actividades del plan de hoy", description = "US-21: Obtener comidas programadas y su estado")
+    @Operation(summary = "👤 USER - Ver actividades del plan de hoy", description = "US-21: Obtener comidas programadas y su estado. SOLO USUARIOS REGULARES.")
     public ResponseEntity<ActividadesDiaResponse> obtenerActividadesHoy(Authentication authentication) {
         Long perfilUsuarioId = obtenerPerfilUsuarioId(authentication);
         ActividadesDiaResponse response = registroService.obtenerActividadesDia(perfilUsuarioId, LocalDate.now());
@@ -64,7 +71,7 @@ public class RegistroController {
     }
 
     @GetMapping("/plan/dia")
-    @Operation(summary = "Ver actividades del plan en una fecha", description = "US-21: Obtener comidas de un día específico")
+    @Operation(summary = "👤 USER - Ver actividades del plan en una fecha", description = "US-21: Obtener comidas de un día específico. SOLO USUARIOS REGULARES.")
     public ResponseEntity<ActividadesDiaResponse> obtenerActividadesDia(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha,
             Authentication authentication) {
@@ -74,7 +81,7 @@ public class RegistroController {
     }
 
     @GetMapping("/rutina/hoy")
-    @Operation(summary = "Ver ejercicios de la rutina de hoy", description = "US-21: Obtener ejercicios programados y su estado")
+    @Operation(summary = "👤 USER - Ver ejercicios de la rutina de hoy", description = "US-21: Obtener ejercicios programados y su estado. SOLO USUARIOS REGULARES.")
     public ResponseEntity<EjerciciosDiaResponse> obtenerEjerciciosHoy(Authentication authentication) {
         Long perfilUsuarioId = obtenerPerfilUsuarioId(authentication);
         EjerciciosDiaResponse response = registroService.obtenerEjerciciosDia(perfilUsuarioId, LocalDate.now());
@@ -82,7 +89,7 @@ public class RegistroController {
     }
 
     @GetMapping("/rutina/dia")
-    @Operation(summary = "Ver ejercicios de la rutina en una fecha", description = "US-21: Obtener ejercicios de un día específico")
+    @Operation(summary = "👤 USER - Ver ejercicios de la rutina en una fecha", description = "US-21: Obtener ejercicios de un día específico. SOLO USUARIOS REGULARES.")
     public ResponseEntity<EjerciciosDiaResponse> obtenerEjerciciosDia(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha,
             Authentication authentication) {
@@ -96,7 +103,7 @@ public class RegistroController {
     // ============================================================
 
     @DeleteMapping("/comidas/{registroId}")
-    @Operation(summary = "Eliminar registro de comida", description = "US-23: Desmarcar comida completada")
+    @Operation(summary = "👤 USER - Eliminar registro de comida", description = "US-23: Desmarcar comida completada. SOLO USUARIOS REGULARES.")
     public ResponseEntity<Void> eliminarRegistroComida(
             @PathVariable Long registroId,
             Authentication authentication) {
@@ -106,7 +113,7 @@ public class RegistroController {
     }
 
     @DeleteMapping("/ejercicios/{registroId}")
-    @Operation(summary = "Eliminar registro de ejercicio", description = "US-23: Desmarcar ejercicio completado")
+    @Operation(summary = "👤 USER - Eliminar registro de ejercicio", description = "US-23: Desmarcar ejercicio completado. SOLO USUARIOS REGULARES.")
     public ResponseEntity<Void> eliminarRegistroEjercicio(
             @PathVariable Long registroId,
             Authentication authentication) {
@@ -143,13 +150,36 @@ public class RegistroController {
         return ResponseEntity.ok(historial);
     }
 
+    @GetMapping("/comidas/{registroId}")
+    @Operation(summary = "Obtener detalle de registro de comida", description = "Consultar información completa de un registro específico")
+    public ResponseEntity<RegistroComidaResponse> obtenerRegistroComida(
+            @PathVariable Long registroId,
+            Authentication authentication) {
+        Long perfilUsuarioId = obtenerPerfilUsuarioId(authentication);
+        RegistroComidaResponse response = registroService.obtenerRegistroComida(perfilUsuarioId, registroId);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/ejercicios/{registroId}")
+    @Operation(summary = "Obtener detalle de registro de ejercicio", description = "Consultar información completa de un registro específico")
+    public ResponseEntity<RegistroEjercicioResponse> obtenerRegistroEjercicio(
+            @PathVariable Long registroId,
+            Authentication authentication) {
+        Long perfilUsuarioId = obtenerPerfilUsuarioId(authentication);
+        RegistroEjercicioResponse response = registroService.obtenerRegistroEjercicio(perfilUsuarioId, registroId);
+        return ResponseEntity.ok(response);
+    }
+
     // ============================================================
     // Utilidades
     // ============================================================
 
     private Long obtenerPerfilUsuarioId(Authentication authentication) {
-        // TODO: Implementar obtención del perfilUsuarioId desde el token JWT
-        // Por ahora retornamos un ID de ejemplo
-        return 1L;
+        String email = authentication.getName();
+        CuentaAuth cuenta = cuentaAuthRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        return perfilUsuarioRepository.findByCuentaId(cuenta.getId())
+                .orElseThrow(() -> new RuntimeException("Perfil no encontrado"))
+                .getId();
     }
 }

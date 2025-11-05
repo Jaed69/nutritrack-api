@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springdoc.core.annotations.ParameterObject;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -26,9 +27,9 @@ import org.springframework.web.bind.annotation.*;
  * Solo accesible por administradores (ROLE_ADMIN)
  */
 @RestController
-@RequestMapping("/api/ejercicios")
+@RequestMapping("/api/v1/ejercicios")
 @RequiredArgsConstructor
-@Tag(name = "Módulo 2: Biblioteca de Contenido - Ejercicios", description = "Gestión del catálogo de ejercicios (US-08) - Fabián Rojas")
+@Tag(name = "Módulo 2: Biblioteca de Contenido - Ejercicios", description = "🔐 ADMIN - Gestión del catálogo de ejercicios (US-08) - Fabián Rojas. SOLO ADMINISTRADORES.")
 @SecurityRequirement(name = "bearerAuth")
 public class EjercicioController {
 
@@ -36,7 +37,7 @@ public class EjercicioController {
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Crear nuevo ejercicio", description = "Crea un nuevo ejercicio en el catálogo. Solo ADMIN.")
+    @Operation(summary = "🔐 ADMIN - Crear ejercicio", description = "Crea un nuevo ejercicio en el catálogo. SOLO ADMINISTRADORES.")
     @ApiResponses(value = {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Ejercicio creado exitosamente"),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Datos inválidos o nombre duplicado"),
@@ -54,7 +55,7 @@ public class EjercicioController {
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Obtener ejercicio por ID", description = "Obtiene los detalles de un ejercicio específico")
+    @Operation(summary = "🔐 ADMIN - Obtener ejercicio por ID", description = "Obtiene los detalles de un ejercicio específico. SOLO ADMINISTRADORES.")
     @ApiResponses(value = {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Ejercicio encontrado"),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Ejercicio no encontrado")
@@ -70,7 +71,7 @@ public class EjercicioController {
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Listar todos los ejercicios", description = "Obtiene una lista paginada de todos los ejercicios")
     public ResponseEntity<ApiResponse<Page<EjercicioResponse>>> listarEjercicios(
-            @PageableDefault(size = 20) Pageable pageable
+            @ParameterObject @PageableDefault(size = 20) Pageable pageable
     ) {
         Page<EjercicioResponse> ejercicios = ejercicioService.listarEjercicios(pageable);
         return ResponseEntity.ok(ApiResponse.success(ejercicios, "Ejercicios listados exitosamente"));
@@ -81,7 +82,7 @@ public class EjercicioController {
     @Operation(summary = "Buscar ejercicios por nombre", description = "Busca ejercicios que contengan el texto especificado (case-insensitive)")
     public ResponseEntity<ApiResponse<Page<EjercicioResponse>>> buscarPorNombre(
             @Parameter(description = "Texto a buscar en el nombre") @RequestParam String nombre,
-            @PageableDefault(size = 20) Pageable pageable
+            @ParameterObject @PageableDefault(size = 20) Pageable pageable
     ) {
         Page<EjercicioResponse> ejercicios = ejercicioService.buscarPorNombre(nombre, pageable);
         return ResponseEntity.ok(ApiResponse.success(ejercicios, "Búsqueda completada"));
@@ -94,7 +95,7 @@ public class EjercicioController {
             @Parameter(description = "Tipo de ejercicio") @RequestParam(required = false) Ejercicio.TipoEjercicio tipo,
             @Parameter(description = "Grupo muscular") @RequestParam(required = false) Ejercicio.GrupoMuscular grupo,
             @Parameter(description = "Nivel de dificultad") @RequestParam(required = false) Ejercicio.NivelDificultad nivel,
-            @PageableDefault(size = 20) Pageable pageable
+            @ParameterObject @PageableDefault(size = 20) Pageable pageable
     ) {
         Page<EjercicioResponse> ejercicios = ejercicioService.filtrarEjercicios(tipo, grupo, nivel, pageable);
         return ResponseEntity.ok(ApiResponse.success(ejercicios, "Ejercicios filtrados exitosamente"));

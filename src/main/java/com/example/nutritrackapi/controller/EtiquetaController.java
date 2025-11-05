@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springdoc.core.annotations.ParameterObject;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -25,9 +26,9 @@ import org.springframework.web.bind.annotation.*;
  * Solo accesible por administradores (ROLE_ADMIN)
  */
 @RestController
-@RequestMapping("/api/etiquetas")
+@RequestMapping("/api/v1/etiquetas")
 @RequiredArgsConstructor
-@Tag(name = "Módulo 2: Biblioteca de Contenido - Etiquetas", description = "Gestión del catálogo de etiquetas (US-06) - Fabián Rojas")
+@Tag(name = "Módulo 2: Biblioteca de Contenido - Etiquetas", description = "🔐 ADMIN - Gestión del catálogo de etiquetas (US-06) - Fabián Rojas. SOLO ADMINISTRADORES.")
 @SecurityRequirement(name = "bearerAuth")
 public class EtiquetaController {
 
@@ -35,7 +36,7 @@ public class EtiquetaController {
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Crear nueva etiqueta", description = "Crea una nueva etiqueta en el sistema. Solo ADMIN.")
+    @Operation(summary = "🔐 ADMIN - Crear etiqueta", description = "Crea una nueva etiqueta en el sistema. SOLO ADMINISTRADORES.")
     @ApiResponses(value = {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Etiqueta creada exitosamente"),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Datos inválidos o nombre duplicado"),
@@ -53,7 +54,7 @@ public class EtiquetaController {
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Obtener etiqueta por ID", description = "Obtiene los detalles de una etiqueta específica")
+    @Operation(summary = "🔐 ADMIN - Obtener etiqueta por ID", description = "Obtiene los detalles de una etiqueta específica. SOLO ADMINISTRADORES.")
     @ApiResponses(value = {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Etiqueta encontrada"),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Etiqueta no encontrada")
@@ -69,7 +70,7 @@ public class EtiquetaController {
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Listar todas las etiquetas", description = "Obtiene una lista paginada de todas las etiquetas")
     public ResponseEntity<ApiResponse<Page<EtiquetaResponse>>> listarEtiquetas(
-            @PageableDefault(size = 20) Pageable pageable
+            @ParameterObject @PageableDefault(size = 20) Pageable pageable
     ) {
         Page<EtiquetaResponse> etiquetas = etiquetaService.listarEtiquetas(pageable);
         return ResponseEntity.ok(ApiResponse.success(etiquetas, "Etiquetas listadas exitosamente"));
@@ -80,7 +81,7 @@ public class EtiquetaController {
     @Operation(summary = "Buscar etiquetas por nombre", description = "Busca etiquetas que contengan el texto especificado (case-insensitive)")
     public ResponseEntity<ApiResponse<Page<EtiquetaResponse>>> buscarPorNombre(
             @Parameter(description = "Texto a buscar en el nombre") @RequestParam String nombre,
-            @PageableDefault(size = 20) Pageable pageable
+            @ParameterObject @PageableDefault(size = 20) Pageable pageable
     ) {
         Page<EtiquetaResponse> etiquetas = etiquetaService.buscarPorNombre(nombre, pageable);
         return ResponseEntity.ok(ApiResponse.success(etiquetas, "Búsqueda completada"));

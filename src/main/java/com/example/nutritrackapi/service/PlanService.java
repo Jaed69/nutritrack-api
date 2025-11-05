@@ -36,6 +36,7 @@ public class PlanService {
     private final EtiquetaRepository etiquetaRepository;
     private final ComidaRepository comidaRepository;
     private final PerfilUsuarioRepository perfilUsuarioRepository;
+    private final CuentaAuthRepository cuentaAuthRepository;
 
     /**
      * US-11: Crea un nuevo plan nutricional.
@@ -378,6 +379,17 @@ public class PlanService {
         }
 
         return PlanResponse.fromEntity(plan);
+    }
+
+    /**
+     * Obtiene el ID del perfil del usuario autenticado
+     */
+    public Long obtenerPerfilUsuarioId(String email) {
+        CuentaAuth cuenta = cuentaAuthRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        return perfilUsuarioRepository.findByCuentaId(cuenta.getId())
+                .orElseThrow(() -> new RuntimeException("Perfil no encontrado"))
+                .getId();
     }
 
 }

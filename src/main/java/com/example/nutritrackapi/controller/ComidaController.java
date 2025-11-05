@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springdoc.core.annotations.ParameterObject;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -28,9 +29,9 @@ import org.springframework.web.bind.annotation.*;
  * Solo accesible por administradores (ROLE_ADMIN)
  */
 @RestController
-@RequestMapping("/api/comidas")
+@RequestMapping("/api/v1/comidas")
 @RequiredArgsConstructor
-@Tag(name = "Módulo 2: Biblioteca de Contenido - Comidas y Recetas", description = "Gestión del catálogo de comidas y recetas (US-09, US-10) - Fabián Rojas")
+@Tag(name = "Módulo 2: Biblioteca de Contenido - Comidas y Recetas", description = "🔐 ADMIN - Gestión del catálogo de comidas y recetas (US-09, US-10) - Fabián Rojas. SOLO ADMINISTRADORES.")
 @SecurityRequirement(name = "bearerAuth")
 public class ComidaController {
 
@@ -38,7 +39,7 @@ public class ComidaController {
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Crear nueva comida", description = "Crea una nueva comida en el catálogo. Solo ADMIN.")
+    @Operation(summary = "🔐 ADMIN - Crear comida", description = "Crea una nueva comida en el catálogo. SOLO ADMINISTRADORES.")
     @ApiResponses(value = {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Comida creada exitosamente"),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Datos inválidos o nombre duplicado"),
@@ -56,7 +57,7 @@ public class ComidaController {
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Obtener comida por ID", description = "Obtiene los detalles de una comida con su información nutricional calculada")
+    @Operation(summary = "🔐 ADMIN - Obtener comida por ID", description = "Obtiene los detalles de una comida con su información nutricional calculada. SOLO ADMINISTRADORES.")
     @ApiResponses(value = {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Comida encontrada"),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Comida no encontrada")
@@ -72,7 +73,7 @@ public class ComidaController {
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Listar todas las comidas", description = "Obtiene una lista paginada de todas las comidas")
     public ResponseEntity<ApiResponse<Page<ComidaResponse>>> listarComidas(
-            @PageableDefault(size = 20) Pageable pageable
+            @ParameterObject @PageableDefault(size = 20) Pageable pageable
     ) {
         Page<ComidaResponse> comidas = comidaService.listarComidas(pageable);
         return ResponseEntity.ok(ApiResponse.success(comidas, "Comidas listadas exitosamente"));
@@ -83,7 +84,7 @@ public class ComidaController {
     @Operation(summary = "Buscar comidas por nombre", description = "Busca comidas que contengan el texto especificado (case-insensitive)")
     public ResponseEntity<ApiResponse<Page<ComidaResponse>>> buscarPorNombre(
             @Parameter(description = "Texto a buscar en el nombre") @RequestParam String nombre,
-            @PageableDefault(size = 20) Pageable pageable
+            @ParameterObject @PageableDefault(size = 20) Pageable pageable
     ) {
         Page<ComidaResponse> comidas = comidaService.buscarPorNombre(nombre, pageable);
         return ResponseEntity.ok(ApiResponse.success(comidas, "Búsqueda completada"));
@@ -94,7 +95,7 @@ public class ComidaController {
     @Operation(summary = "Filtrar por tipo", description = "Obtiene comidas de un tipo específico (DESAYUNO, ALMUERZO, etc.)")
     public ResponseEntity<ApiResponse<Page<ComidaResponse>>> filtrarPorTipo(
             @Parameter(description = "Tipo de comida") @PathVariable Comida.TipoComida tipo,
-            @PageableDefault(size = 20) Pageable pageable
+            @ParameterObject @PageableDefault(size = 20) Pageable pageable
     ) {
         Page<ComidaResponse> comidas = comidaService.filtrarPorTipo(tipo, pageable);
         return ResponseEntity.ok(ApiResponse.success(comidas, "Comidas filtradas exitosamente"));

@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
-@Tag(name = "Módulo 1: Autenticación y Perfil", description = "Endpoints para registro, login y gestión de cuentas (US-01 a US-05) - Leonel Alzamora")
+@Tag(name = "Módulo 1: Autenticación y Perfil", description = "🔓 PÚBLICO - Endpoints para registro, login y gestión de cuentas (US-01 a US-05) - Leonel Alzamora. ACCESO PÚBLICO (sin autenticación).")
 public class AuthController {
 
     private final AuthService authService;
@@ -29,8 +29,8 @@ public class AuthController {
      */
     @PostMapping("/registro")
     @Operation(
-        summary = "Registrar nuevo usuario", 
-        description = "Crea una nueva cuenta de usuario con su perfil básico"
+        summary = "🔓 PÚBLICO - Registrar nuevo usuario", 
+        description = "Crea una nueva cuenta de usuario con su perfil básico. ACCESO PÚBLICO."
     )
     @RequestBody(
         description = "Datos del nuevo usuario",
@@ -85,8 +85,8 @@ public class AuthController {
      */
     @PostMapping("/login")
     @Operation(
-        summary = "Iniciar sesión", 
-        description = "Autentica un usuario y retorna un token JWT"
+        summary = "🔓 PÚBLICO - Iniciar sesión", 
+        description = "Autentica un usuario y retorna un token JWT. ACCESO PÚBLICO."
     )
     @RequestBody(
         description = "Credenciales de acceso",

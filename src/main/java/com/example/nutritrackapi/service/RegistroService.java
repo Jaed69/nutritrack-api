@@ -321,4 +321,34 @@ public class RegistroService {
                 .map(RegistroEjercicioResponse::fromEntity)
                 .collect(Collectors.toList());
     }
+
+    @Transactional(readOnly = true)
+    public RegistroComidaResponse obtenerRegistroComida(Long perfilUsuarioId, Long registroId) {
+        log.info("Obteniendo detalle de registro de comida {} para usuario {}", registroId, perfilUsuarioId);
+
+        RegistroComida registro = registroComidaRepository.findById(registroId)
+                .orElseThrow(() -> new EntityNotFoundException("Registro de comida no encontrado"));
+
+        // Validar que el registro pertenece al usuario
+        if (!registro.getPerfilUsuario().getId().equals(perfilUsuarioId)) {
+            throw new BusinessException("El registro no pertenece al usuario");
+        }
+
+        return RegistroComidaResponse.fromEntity(registro);
+    }
+
+    @Transactional(readOnly = true)
+    public RegistroEjercicioResponse obtenerRegistroEjercicio(Long perfilUsuarioId, Long registroId) {
+        log.info("Obteniendo detalle de registro de ejercicio {} para usuario {}", registroId, perfilUsuarioId);
+
+        RegistroEjercicio registro = registroEjercicioRepository.findById(registroId)
+                .orElseThrow(() -> new EntityNotFoundException("Registro de ejercicio no encontrado"));
+
+        // Validar que el registro pertenece al usuario
+        if (!registro.getPerfilUsuario().getId().equals(perfilUsuarioId)) {
+            throw new BusinessException("El registro no pertenece al usuario");
+        }
+
+        return RegistroEjercicioResponse.fromEntity(registro);
+    }
 }

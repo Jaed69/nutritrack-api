@@ -7,12 +7,14 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springdoc.core.annotations.ParameterObject;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -28,10 +30,10 @@ import java.util.List;
  * Solo accesible por administradores (ROLE_ADMIN)
  */
 @RestController
-@RequestMapping("/api/admin/planes")
+@RequestMapping("/api/v1/planes")
 @RequiredArgsConstructor
 @Tag(name = "Módulo 3: Gestor de Catálogo - Planes Nutricionales", 
-     description = "Gestión de planes nutricionales (US-11 a US-14) - Jhamil Peña")
+     description = "🔐 ADMIN: Gestión completa | 👤 USER: Ver catálogo filtrado por perfil (US-11 a US-14) - Jhamil Peña")
 @SecurityRequirement(name = "bearerAuth")
 public class PlanController {
 
@@ -43,8 +45,8 @@ public class PlanController {
      */
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Crear plan nutricional", 
-               description = "Crea un nuevo plan nutricional con objetivos diarios. RN11: Nombre debe ser único.")
+    @Operation(summary = "🔐 ADMIN - Crear plan nutricional", 
+               description = "Crea un nuevo plan nutricional con objetivos diarios. RN11: Nombre debe ser único. SOLO ADMINISTRADORES.")
     @ApiResponses(value = {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Plan creado exitosamente"),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Datos inválidos o nombre duplicado (RN11)"),
@@ -65,8 +67,8 @@ public class PlanController {
      */
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Obtener plan por ID", 
-               description = "Obtiene los detalles completos de un plan incluyendo objetivos nutricionales")
+    @Operation(summary = "🔐 ADMIN - Obtener plan por ID", 
+               description = "Obtiene los detalles completos de un plan incluyendo objetivos nutricionales. SOLO ADMINISTRADORES.")
     @ApiResponses(value = {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Plan encontrado"),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Plan no encontrado")
@@ -83,10 +85,10 @@ public class PlanController {
      */
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Listar todos los planes (Admin)", 
-               description = "Obtiene lista paginada de todos los planes incluyendo inactivos. Solo ADMIN.")
+    @Operation(summary = "🔐 ADMIN - Listar todos los planes", 
+               description = "Obtiene lista paginada de todos los planes incluyendo inactivos. SOLO ADMINISTRADORES.")
     public ResponseEntity<ApiResponse<Page<PlanResponse>>> listarPlanesAdmin(
-            @PageableDefault(size = 20, sort = "id") Pageable pageable
+            @ParameterObject @PageableDefault(size = 20) Pageable pageable
     ) {
         Page<PlanResponse> planes = planService.listarPlanesAdmin(pageable);
         return ResponseEntity.ok(ApiResponse.success(planes, "Planes listados exitosamente"));
@@ -98,10 +100,10 @@ public class PlanController {
      */
     @GetMapping("/activos")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Listar planes activos", 
-               description = "Obtiene solo los planes activos disponibles para asignar. RN28: Solo activo=true")
+    @Operation(summary = "🔐 ADMIN - Listar planes activos", 
+               description = "Obtiene solo los planes activos disponibles para asignar. RN28: Solo activo=true. SOLO ADMINISTRADORES.")
     public ResponseEntity<ApiResponse<Page<PlanResponse>>> listarPlanesActivos(
-            @PageableDefault(size = 20, sort = "id") Pageable pageable
+            @ParameterObject @PageableDefault(size = 20) Pageable pageable
     ) {
         Page<PlanResponse> planes = planService.listarPlanesActivos(pageable);
         return ResponseEntity.ok(ApiResponse.success(planes, "Planes activos listados"));
@@ -114,13 +116,14 @@ public class PlanController {
      */
     @GetMapping("/catalogo")
     @PreAuthorize("hasRole('USER')")
-    @Operation(summary = "Ver catálogo de planes (Cliente)", 
-               description = "US-16: Obtiene planes disponibles. RN15: Sugiere según objetivo. RN16: 🚨FILTRA ALÉRGENOS.")
+    @Operation(summary = "👤 USER - Ver catálogo de planes", 
+               description = "US-16: Obtiene planes disponibles filtrados por perfil del usuario autenticado. RN15: Sugiere según objetivo. RN16: 🚨FILTRA ALÉRGENOS. SOLO USUARIOS REGULARES.")
     public ResponseEntity<ApiResponse<Page<PlanResponse>>> verCatalogo(
-            @Parameter(description = "ID del perfil usuario") @RequestParam Long perfilUsuarioId,
+            Authentication authentication,
             @Parameter(description = "Filtrar solo planes sugeridos según objetivo") @RequestParam(required = false, defaultValue = "false") boolean sugeridos,
-            @PageableDefault(size = 20, sort = "id") Pageable pageable
+            @ParameterObject @PageableDefault(size = 20) Pageable pageable
     ) {
+        Long perfilUsuarioId = planService.obtenerPerfilUsuarioId(authentication.getName());
         Page<PlanResponse> planes = planService.verCatalogo(perfilUsuarioId, sugeridos, pageable);
         return ResponseEntity.ok(ApiResponse.success(planes, "Catálogo de planes obtenido"));
     }
@@ -134,9 +137,10 @@ public class PlanController {
     @Operation(summary = "Ver detalle de plan (Cliente)", 
                description = "US-17: Obtiene detalle del plan validando alérgenos del usuario. RN16: 🚨SEGURIDAD SALUD")
     public ResponseEntity<ApiResponse<PlanResponse>> verDetallePlan(
-            @Parameter(description = "ID del plan") @PathVariable Long id,
-            @Parameter(description = "ID del perfil usuario") @RequestParam Long perfilUsuarioId
+            Authentication authentication,
+            @Parameter(description = "ID del plan") @PathVariable Long id
     ) {
+        Long perfilUsuarioId = planService.obtenerPerfilUsuarioId(authentication.getName());
         PlanResponse plan = planService.verDetallePlan(id, perfilUsuarioId);
         return ResponseEntity.ok(ApiResponse.success(plan, "Detalle del plan obtenido"));
     }
@@ -150,7 +154,7 @@ public class PlanController {
                description = "Busca planes que contengan el texto especificado (case-insensitive)")
     public ResponseEntity<ApiResponse<Page<PlanResponse>>> buscarPorNombre(
             @Parameter(description = "Texto a buscar en el nombre") @RequestParam String nombre,
-            @PageableDefault(size = 20) Pageable pageable
+            @ParameterObject @PageableDefault(size = 20) Pageable pageable
     ) {
         Page<PlanResponse> planes = planService.buscarPorNombre(nombre, pageable);
         return ResponseEntity.ok(ApiResponse.success(planes, "Búsqueda completada"));

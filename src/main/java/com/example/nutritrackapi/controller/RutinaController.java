@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springdoc.core.annotations.ParameterObject;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -15,6 +16,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -29,10 +31,10 @@ import java.util.List;
  * Solo accesible por administradores (ROLE_ADMIN)
  */
 @RestController
-@RequestMapping("/api/admin/rutinas")
+@RequestMapping("/api/v1/rutinas")
 @RequiredArgsConstructor
 @Tag(name = "Módulo 3: Gestor de Catálogo - Rutinas de Ejercicio", 
-     description = "Gestión de rutinas de ejercicio (US-11 a US-15) - Jhamil Peña")
+     description = "🔐 ADMIN: Gestión completa | 👤 USER: Ver catálogo filtrado por perfil (US-11 a US-15) - Jhamil Peña")
 @SecurityRequirement(name = "bearerAuth")
 public class RutinaController {
 
@@ -44,8 +46,8 @@ public class RutinaController {
      */
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Crear rutina de ejercicio", 
-               description = "Crea una nueva rutina de ejercicio. RN11: Nombre debe ser único.")
+    @Operation(summary = "🔐 ADMIN - Crear rutina de ejercicio", 
+               description = "Crea una nueva rutina de ejercicio. RN11: Nombre debe ser único. SOLO ADMINISTRADORES.")
     @ApiResponses(value = {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Rutina creada exitosamente"),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Datos inválidos o nombre duplicado (RN11)"),
@@ -66,8 +68,8 @@ public class RutinaController {
      */
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Obtener rutina por ID", 
-               description = "Obtiene los detalles completos de una rutina")
+    @Operation(summary = "🔐 ADMIN - Obtener rutina por ID", 
+               description = "Obtiene los detalles completos de una rutina. SOLO ADMINISTRADORES.")
     @ApiResponses(value = {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Rutina encontrada"),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Rutina no encontrada")
@@ -84,10 +86,10 @@ public class RutinaController {
      */
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Listar todas las rutinas (Admin)", 
-               description = "Obtiene lista paginada de todas las rutinas incluyendo inactivas. Solo ADMIN.")
+    @Operation(summary = "🔐 ADMIN - Listar todas las rutinas", 
+               description = "Obtiene lista paginada de todas las rutinas incluyendo inactivas. SOLO ADMINISTRADORES.")
     public ResponseEntity<ApiResponse<Page<RutinaResponse>>> listarRutinasAdmin(
-            @PageableDefault(size = 20, sort = "id") Pageable pageable
+            @ParameterObject @PageableDefault(size = 20) Pageable pageable
     ) {
         Page<RutinaResponse> rutinas = rutinaService.listarRutinasAdmin(pageable);
         return ResponseEntity.ok(ApiResponse.success(rutinas, "Rutinas listadas exitosamente"));
@@ -99,10 +101,10 @@ public class RutinaController {
      */
     @GetMapping("/activas")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Listar rutinas activas", 
-               description = "Obtiene solo las rutinas activas disponibles para asignar. RN28: Solo activo=true")
+    @Operation(summary = "🔐 ADMIN - Listar rutinas activas", 
+               description = "Obtiene solo las rutinas activas disponibles para asignar. RN28: Solo activo=true. SOLO ADMINISTRADORES.")
     public ResponseEntity<ApiResponse<Page<RutinaResponse>>> listarRutinasActivas(
-            @PageableDefault(size = 20, sort = "id") Pageable pageable
+            @ParameterObject @PageableDefault(size = 20) Pageable pageable
     ) {
         Page<RutinaResponse> rutinas = rutinaService.listarRutinasActivas(pageable);
         return ResponseEntity.ok(ApiResponse.success(rutinas, "Rutinas activas listadas"));
@@ -115,13 +117,14 @@ public class RutinaController {
      */
     @GetMapping("/catalogo")
     @PreAuthorize("hasRole('USER')")
-    @Operation(summary = "Ver catálogo de rutinas (Cliente)", 
-               description = "US-16: Obtiene rutinas disponibles. RN15: Sugiere según objetivo. RN16: 🚨FILTRA ALÉRGENOS.")
+    @Operation(summary = "👤 USER - Ver catálogo de rutinas", 
+               description = "US-16: Obtiene rutinas disponibles filtradas por perfil del usuario autenticado. RN15: Sugiere según objetivo. RN16: 🚨FILTRA ALÉRGENOS. SOLO USUARIOS REGULARES.")
     public ResponseEntity<ApiResponse<Page<RutinaResponse>>> verCatalogo(
-            @Parameter(description = "ID del perfil usuario") @RequestParam Long perfilUsuarioId,
+            Authentication authentication,
             @Parameter(description = "Filtrar solo rutinas sugeridas según objetivo") @RequestParam(required = false, defaultValue = "false") boolean sugeridos,
-            @PageableDefault(size = 20, sort = "id") Pageable pageable
+            @ParameterObject @PageableDefault(size = 20) Pageable pageable
     ) {
+        Long perfilUsuarioId = rutinaService.obtenerPerfilUsuarioId(authentication.getName());
         Page<RutinaResponse> rutinas = rutinaService.verCatalogo(perfilUsuarioId, sugeridos, pageable);
         return ResponseEntity.ok(ApiResponse.success(rutinas, "Catálogo de rutinas obtenido"));
     }
@@ -135,9 +138,10 @@ public class RutinaController {
     @Operation(summary = "Ver detalle de rutina (Cliente)", 
                description = "US-17: Obtiene detalle de rutina validando alérgenos. RN16: 🚨SEGURIDAD SALUD")
     public ResponseEntity<ApiResponse<RutinaResponse>> verDetalleRutina(
-            @Parameter(description = "ID de la rutina") @PathVariable Long id,
-            @Parameter(description = "ID del perfil usuario") @RequestParam Long perfilUsuarioId
+            Authentication authentication,
+            @Parameter(description = "ID de la rutina") @PathVariable Long id
     ) {
+        Long perfilUsuarioId = rutinaService.obtenerPerfilUsuarioId(authentication.getName());
         RutinaResponse rutina = rutinaService.verDetalleRutina(id, perfilUsuarioId);
         return ResponseEntity.ok(ApiResponse.success(rutina, "Detalle de rutina obtenido"));
     }
@@ -151,7 +155,7 @@ public class RutinaController {
                description = "Busca rutinas que contengan el texto especificado (case-insensitive)")
     public ResponseEntity<ApiResponse<Page<RutinaResponse>>> buscarPorNombre(
             @Parameter(description = "Texto a buscar en el nombre") @RequestParam String nombre,
-            @PageableDefault(size = 20) Pageable pageable
+            @ParameterObject @PageableDefault(size = 20) Pageable pageable
     ) {
         Page<RutinaResponse> rutinas = rutinaService.buscarPorNombre(nombre, pageable);
         return ResponseEntity.ok(ApiResponse.success(rutinas, "Búsqueda completada"));

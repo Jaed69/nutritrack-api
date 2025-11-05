@@ -80,11 +80,31 @@ public class OpenApiConfig {
                     - US-05: Eliminación de cuenta (requiere confirmación "ELIMINAR")
                     - Control de acceso basado en roles (ADMIN/USER)
                     
-                    ### ✅ Módulo 2: Gestión de Perfil y Salud
-                    - US-04: Configurar/actualizar perfil de salud
-                    - US-06: Registrar y consultar mediciones corporales
-                    - Historial de progreso con cálculo automático de IMC
-                    - Validación de duplicados por fecha
+                    ### ✅ Módulo 2: Catálogo de Alimentos y Ejercicios
+                    - Gestión de ingredientes, comidas y ejercicios
+                    - Sistema de etiquetas para categorización
+                    - Solo administradores pueden crear/modificar
+                    - Usuarios pueden consultar el catálogo
+                    
+                    ### ✅ Módulo 3: Planes y Rutinas
+                    - US-07: Consultar planes nutricionales disponibles
+                    - US-08: Ver detalle de plan (comidas por día)
+                    - US-09: Consultar rutinas de ejercicio disponibles
+                    - US-10: Ver detalle de rutina (ejercicios por semana)
+                    - Administradores gestionan planes y rutinas
+                    
+                    ### ✅ Módulo 4: Asignación de Planes y Rutinas
+                    - US-18: Asignar plan nutricional a usuario
+                    - US-19: Asignar rutina de ejercicio a usuario
+                    - US-20: Gestión de estados (ACTIVO, PAUSADO, COMPLETADO, CANCELADO)
+                    - Seguimiento de progreso y días completados
+                    
+                    ### ✅ Módulo 5: Tracking de Actividades Diarias
+                    - US-21: Ver actividades programadas del día (plan y rutina)
+                    - US-22: Registrar comidas y ejercicios realizados
+                    - US-23: Eliminar registros (desmarcar actividades)
+                    - Historial de actividades con rangos de fechas
+                    - Cálculo automático de calorías consumidas/quemadas
                     
                     ## 🎯 Objetivos de Salud Disponibles
                     - **PERDER_PESO** - Pérdida de peso
