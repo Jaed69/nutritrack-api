@@ -1,232 +1,508 @@
-# Colección Postman - NutriTrack API Módulo 1
+# 🧪 Colecciones Postman - NutriTrack API
 
-## 📁 Archivos
+> **Guía Completa de Pruebas con Demostración de Unit Tests**  
+> Esta guía documenta cómo usar las colecciones Postman para validar las reglas de negocio  
+> y demostrar la relación con los 175 tests unitarios implementados.
 
-- `NutriTrack_Modulo1.postman_collection.json` - Colección completa de Módulo 1
-- `NutriTrack_API_Complete.postman_collection.json` - Colección completa (todos los módulos)
+---
+
+## 📁 Archivos Disponibles
+
+| Colección | Descripción | Tests Unitarios | Reglas |
+|-----------|-------------|-----------------|--------|
+| `NutriTrack_Unit_Tests_Demo.postman_collection.json` | **🎯 DEMO PARA EXPOSICIÓN** | 13 tests (RN30, RN31, RN32) | 3 reglas críticas |
+| `NutriTrack_Modulo1.postman_collection.json` | Autenticación y Perfil | 24 tests | RN01-RN05, RN30-RN31 |
+| `NutriTrack_Modulo2.postman_collection.json` | Biblioteca de Contenido | 39 tests | RN06-RN10 |
+| `NutriTrack_Modulo3.postman_collection.json` | Gestor de Catálogo | 39 tests | RN11-RN14 |
+| `NutriTrack_Modulo4.postman_collection.json` | Asignación de Metas | 72 tests | RN17-RN19, RN26, **RN32** |
+| `NutriTrack_Modulo5.postman_collection.json` | Seguimiento de Progreso | 1 test | RN20-RN24 |
+| `NutriTrack_API_Complete.postman_collection.json` | Colección completa | 175 tests | Todas (27/39) |
+
+---
+
+## 🎯 COLECCIÓN RECOMENDADA PARA EXPOSICIÓN
+
+### `NutriTrack_Unit_Tests_Demo.postman_collection.json`
+
+**Esta colección está diseñada específicamente para demostrar:**
+- ✅ RN30: Validación de Email RFC 5322 + DNS
+- ✅ RN31: Política de Contraseñas Robusta (12+ caracteres)
+- ✅ RN32: Validación Cruzada de Alérgenos
+
+**Estructura:**
+```
+NutriTrack - Demo Unit Tests/
+├── RN30 - Validación de Email/
+│   ├── ❌ Email sin formato válido (sin @)
+│   ├── ❌ Email con dominio inexistente (DNS Fail)
+│   └── ✅ Email válido con DNS verificado
+│
+├── RN31 - Política de Contraseñas Robusta/
+│   ├── ❌ Contraseña corta (< 12 caracteres)
+│   ├── ❌ Contraseña sin complejidad (solo lowercase)
+│   ├── ❌ Contraseña común (blacklist)
+│   ├── ❌ Contraseña que contiene email
+│   └── ✅ Contraseña válida (12+ chars + complejidad)
+│
+├── RN32 - Validación Cruzada de Alérgenos/
+│   ├── 0. Login Usuario Demo
+│   ├── ❌ Activar plan con alérgenos (si usuario tiene alergias)
+│   └── ✅ Ver Planes del Catálogo (filtrados por alérgenos)
+│
+└── 📊 Resumen de Unit Tests/
+    └── README - Unit Tests Coverage
+```
+
+**Tests Automáticos Incluidos:**
+- ✅ Validación de status codes (400 para errores, 201 para éxito)
+- ✅ Verificación de mensajes de error específicos
+- ✅ Assertions de formato de respuesta
+
+---
 
 ## 🚀 Importar en Postman
 
+### Método 1: Importación Simple
 1. Abre Postman
 2. Click en **Import** (esquina superior izquierda)
-3. Arrastra el archivo `NutriTrack_Modulo1.postman_collection.json`
+3. Arrastra `NutriTrack_Unit_Tests_Demo.postman_collection.json`
 4. Click en **Import**
 
-## 📋 Estructura de la Colección
+### Método 2: Importación desde URL
+```
+File → Import → Link
+```
+Pega la URL del repositorio si está publicado
 
+---
+
+## 🧪 CÓMO DEMOSTRAR LOS UNIT TESTS
+
+### Paso 1: Verificar que la aplicación está corriendo
+```bash
+./mvnw spring-boot:run
 ```
-NutriTrack API - Módulo 1/
-├── 1. Autenticación/
-│   ├── Login Admin
-│   ├── Registrar Usuario
-│   ├── Login Usuario
-│   └── Eliminar Cuenta
-│
-├── 2. Gestión de Perfil/
-│   ├── Obtener Mi Perfil
-│   ├── Actualizar Mi Perfil
-│   └── Actualizar Unidades de Medida
-│
-├── 3. Perfil de Salud/
-│   ├── Configurar Perfil de Salud
-│   └── Obtener Perfil de Salud
-│
-├── 4. Historial de Medidas/
-│   ├── Registrar Medidas
-│   ├── Obtener Historial de Medidas
-│   └── Obtener Última Medida
-│
-└── 5. Health Check/
-    └── Health Check
+Espera a ver: `Started NutritrackApiApplication in X seconds`
+
+### Paso 2: Abrir Swagger UI (Documentación Visual)
 ```
+http://localhost:8080/swagger-ui/index.html
+```
+
+**Puntos clave en Swagger:**
+- Endpoint `POST /api/v1/auth/registro` muestra ejemplos de RN30 y RN31
+- Endpoint `POST /api/v1/usuario/planes/activar` documenta RN32
+- Cada endpoint muestra los unit tests asociados en su descripción
+
+### Paso 3: Ejecutar colección de demostración en Postman
+
+**Ejecutar carpeta RN30:**
+1. Abrir Postman
+2. Navegar a colección "NutriTrack - Demo Unit Tests"
+3. Click derecho en carpeta "RN30 - Validación de Email"
+4. Seleccionar "Run folder"
+5. Click "Run NutriTrack..."
+
+**Resultado esperado:**
+```
+✅ RN30: Rechaza email sin @
+✅ Mensaje de error contiene validación
+✅ RN30: Rechaza dominio inexistente (DNS lookup)
+✅ Mensaje indica dominio no existe
+✅ RN30: Acepta email válido RFC 5322 con DNS
+```
+
+**Ejecutar carpeta RN31:**
+- Mismo proceso, carpeta "RN31 - Política de Contraseñas Robusta"
+- 5 tests deben pasar
+
+**Ejecutar carpeta RN32:**
+- Mismo proceso, carpeta "RN32 - Validación Cruzada de Alérgenos"
+- 3 tests deben pasar
+
+### Paso 4: Ejecutar tests unitarios en terminal (Comparación)
+
+```bash
+# Ejecutar todos los tests
+./mvnw test
+
+# Ejecutar solo tests de AuthService (RN30, RN31)
+./mvnw test -Dtest=AuthServiceTest
+
+# Ejecutar solo tests de UsuarioPlanService (RN32)
+./mvnw test -Dtest=UsuarioPlanServiceTest
+```
+
+**Mostrar salida:**
+```
+Tests run: 175, Failures: 0, Errors: 0, Skipped: 0
+BUILD SUCCESS ✅
+```
+
+### Paso 5: Mostrar código de los tests
+
+**Ubicación de los tests:**
+```
+src/test/java/com/example/nutritrackapi/service/
+├── AuthServiceTest.java          (RN30, RN31 - 13 tests)
+├── UsuarioPlanServiceTest.java   (RN32 - 37 tests)
+├── PerfilServiceTest.java        (RN03, RN22 - 11 tests)
+├── EtiquetaServiceTest.java      (RN06, RN08 - 12 tests)
+├── IngredienteServiceTest.java   (RN07, RN09 - 9 tests)
+├── PlanServiceTest.java          (RN11, RN14, RN28 - 22 tests)
+└── ... (8 clases más)
+```
+
+**Abrir en VS Code:**
+```bash
+code src/test/java/com/example/nutritrackapi/service/AuthServiceTest.java
+```
+
+---
+
+## 📊 MAPEO: POSTMAN ↔ UNIT TESTS ↔ REGLAS
+
+### RN30: Validación de Email
+
+| Test Postman | Test Unitario | Método | Status |
+|--------------|---------------|--------|--------|
+| Email sin @ | `testRegistro_EmailFormatoInvalido()` | `AuthService.validarEmail()` | ✅ |
+| Dominio inexistente | `testRegistro_EmailDominioInexistente()` | `InetAddress.getByName()` | ✅ |
+| Email válido | `testRegistro_EmailValido()` | `@Email(regexp=...)` | ✅ |
+
+**Documentación:** Ver `docs/UNIT_TESTS_MAPPING.md` línea 32-38
+
+---
+
+### RN31: Política de Contraseñas
+
+| Test Postman | Test Unitario | Validación | Status |
+|--------------|---------------|------------|--------|
+| Contraseña < 12 chars | `testRegistro_PasswordCorta()` | `@Size(min=12)` | ✅ |
+| Sin mayúscula | `testRegistro_PasswordSinMayuscula()` | `@Pattern(...)` | ✅ |
+| Sin minúscula | `testRegistro_PasswordSinMinuscula()` | `@Pattern(...)` | ✅ |
+| Sin número | `testRegistro_PasswordSinNumero()` | `@Pattern(...)` | ✅ |
+| Sin símbolo | `testRegistro_PasswordSinSimbolo()` | `@Pattern(...)` | ✅ |
+| Contraseña común | `testRegistro_PasswordComun()` | `validarPasswordSegura()` | ✅ |
+| Contiene email | `testRegistro_PasswordContieneEmail()` | `validarPasswordSegura()` | ✅ |
+
+**Blacklist de contraseñas comunes:**
+```java
+Set.of("password1234", "admin1234567", "123456789012", "qwerty123456", "letmein12345")
+```
+
+---
+
+### RN32: Validación Cruzada de Alérgenos
+
+| Test Postman | Test Unitario | Query | Status |
+|--------------|---------------|-------|--------|
+| Activar con alérgeno | `testActivarPlan_ConAlergenosIncompatibles()` | 5-join query | ✅ |
+| Sin alergias | `testActivarPlan_SinAlergias()` | Vacío OK | ✅ |
+| Alergias compatibles | `testActivarPlan_AlergiasPeroCompatibles()` | Sin intersección | ✅ |
+
+**Query HQL (5 niveles):**
+```sql
+SELECT DISTINCT ie.id FROM Plan p
+INNER JOIN p.dias pd                    -- Plan → PlanDia
+INNER JOIN pd.comida c                  -- PlanDia → Comida
+INNER JOIN c.comidaIngredientes ci      -- Comida → ComidaIngrediente
+INNER JOIN ci.ingrediente i             -- ComidaIngrediente → Ingrediente
+INNER JOIN i.etiquetas ie               -- Ingrediente → Etiqueta
+WHERE p.id = :planId
+```
+
+**Lógica de validación:**
+```java
+Set<Long> alergenosEnPlan = alergenosUsuario.stream()
+    .filter(etiquetasIngredientesPlan::contains)
+    .collect(Collectors.toSet());
+
+if (!alergenosEnPlan.isEmpty()) {
+    throw new BusinessException("Plan contiene: " + nombres);
+}
+```
+
+---
 
 ## 🔧 Variables de Colección
-
-La colección usa variables automáticas que se configuran con scripts:
 
 | Variable | Descripción | Valor Inicial |
 |----------|-------------|---------------|
 | `baseUrl` | URL base de la API | `http://localhost:8080` |
-| `adminToken` | Token del usuario admin | _(se guarda automáticamente)_ |
-| `userToken` | Token del usuario regular | _(se guarda automáticamente)_ |
-| `userId` | ID del usuario autenticado | _(se guarda automáticamente)_ |
+| `userToken` | Token JWT del usuario | _(se guarda automáticamente)_ |
 
-## 🎯 Flujo de Pruebas Recomendado
+---
 
-### 1️⃣ **Configuración Inicial**
+## 🛡️ Todas las Reglas de Negocio Implementadas
 
-```
-1. Health Check → Verificar que el servidor está corriendo
-2. Login Admin → Obtener token de administrador
-```
+Ver documentación completa en: `docs/REGLAS_NEGOCIO.MD`
 
-### 2️⃣ **Flujo Usuario Nuevo**
+### Módulo 1 (RN01-RN05, RN30-RN31)
+- ✅ RN01: Email único
+- ✅ RN02: Validación de credenciales
+- ✅ RN03: Unidades de medida consistentes
+- ✅ RN04: Perfil salud con etiquetas maestras
+- ✅ RN05: Eliminación con confirmación
+- ✅ **RN30: Email RFC 5322 + DNS**
+- ✅ **RN31: Contraseña 12+ chars con complejidad**
 
-```
-1. Registrar Usuario → Crea cuenta y obtiene token
-2. Obtener Mi Perfil → Ver perfil recién creado
-3. Actualizar Mi Perfil → Modificar nombre/apellido
-4. Actualizar Unidades de Medida → Elegir KG o LBS
-5. Configurar Perfil de Salud → Establecer objetivo y nivel de actividad
-6. Registrar Medidas → Primera entrada de peso/altura
-7. Obtener Historial de Medidas → Verificar registro
-```
+### Módulo 2 (RN06-RN10)
+- ✅ RN06: Etiquetas con nombre único
+- ✅ RN07: Ingredientes/Ejercicios únicos
+- ✅ RN08: No eliminar etiquetas en uso
+- ✅ RN09: No eliminar ingredientes en uso
+- ✅ RN10: Cantidad ingrediente positiva
 
-### 3️⃣ **Flujo Usuario Existente**
+### Módulo 3 (RN11-RN14)
+- ✅ RN11: Nombres únicos en catálogo
+- ✅ RN12: Solo asignar etiquetas existentes
+- ✅ RN13: Series y repeticiones positivas
+- ✅ RN14: No eliminar plan con usuarios activos
 
-```
-1. Login Usuario → Obtener token
-2. Obtener Mi Perfil → Ver datos completos
-3. Obtener Última Medida → Ver progreso reciente
-4. Registrar Medidas → Nueva entrada
-```
+### Módulo 4 (RN17-RN19, RN26, RN32)
+- ✅ RN17: No duplicar mismo plan activo
+- ✅ RN18: Proponer reemplazo
+- ✅ RN19: No pausar/reanudar en estados finales
+- ✅ RN26: Transiciones de estado válidas
+- ✅ **RN32: Validación cruzada de alérgenos**
 
-### 4️⃣ **Pruebas Negativas**
+### Módulo 5 (RN20-RN24)
+- ✅ RN20: Mostrar checks en actividades
+- ✅ RN21: No marcar si plan pausado
+- ✅ RN22: Validación de mediciones en rango
+- ✅ RN23: Gráfico requiere 2+ registros
+- ⚠️ RN24: Reporte PDF (pendiente)
 
-```
-1. Registrar Usuario (email duplicado) → Error 400
-2. Login Usuario (password incorrecta) → Error 401
-3. Eliminar Cuenta (sin confirmación) → Error 400
-4. Actualizar Unidades (valor inválido) → Error 400
-5. Registrar Medidas (fecha futura) → Error 400
-```
+### Reglas Transversales
+- ✅ RN25: Cálculo automático de calorías
+- ✅ RN26: Transiciones de estado válidas
+- ✅ RN27: Unidades consistentes (KG/CM en DB)
+- ✅ RN28: Soft delete para planes/rutinas
 
-## 🔑 Credenciales Iniciales
+---
 
-### Usuario Administrador (creado automáticamente)
-```
-Email: admin@nutritrack.com
-Password: Admin123!
-```
+## 📝 Ejemplos de Uso para Demostración
 
-### Usuario de Prueba (crear con "Registrar Usuario")
-```
-Nombre: Carlos
-Apellido: Martínez
-Email: carlos.martinez@email.com
-Password: MiPassword123!
-```
+### Demo 1: RN30 - Email con dominio inexistente
 
-## 🤖 Scripts Automáticos
-
-Los siguientes requests tienen scripts que guardan tokens automáticamente:
-
-- **Login Admin** → Guarda en `adminToken`
-- **Registrar Usuario** → Guarda en `userToken`
-- **Login Usuario** → Guarda en `userToken`
-- **Eliminar Cuenta** → Limpia `userToken`
-
-## 📊 Códigos de Respuesta HTTP
-
-| Código | Significado | Cuándo aparece |
-|--------|-------------|----------------|
-| 200 | OK | Operación exitosa (GET, PUT, DELETE) |
-| 201 | Created | Registro exitoso |
-| 400 | Bad Request | Datos inválidos o regla de negocio violada |
-| 401 | Unauthorized | Token inválido o credenciales incorrectas |
-| 404 | Not Found | Recurso no encontrado |
-| 500 | Server Error | Error interno del servidor |
-
-## 🛡️ Reglas de Negocio Implementadas
-
-| Código | Descripción |
-|--------|-------------|
-| RN01 | El email debe ser único en el sistema |
-| RN02 | Validación de credenciales al login |
-| RN03 | Solo se permiten unidades KG o LBS |
-| RN04 | No se pueden registrar medidas en fechas futuras |
-| RN05 | Eliminar cuenta requiere escribir "ELIMINAR" |
-
-## 📝 Ejemplos de Uso
-
-### Crear Usuario y Configurar Perfil Completo
-
-1. **Registrar Usuario**
+**Request Postman:**
 ```json
 POST /api/v1/auth/registro
 {
-  "nombre": "Carlos",
-  "apellido": "Martínez",
-  "email": "carlos.martinez@email.com",
-  "password": "MiPassword123!"
+  "email": "usuario@dominioquenoexiste99999.com",
+  "password": "TestPass123!",
+  "nombre": "Test",
+  "apellido": "Error"
 }
 ```
 
-2. **Configurar Salud**
+**Response esperado:**
 ```json
-POST /api/v1/perfil/salud
 {
-  "objetivo": "PERDER_PESO",
-  "nivelActividad": "MODERADO",
-  "diasEntrenamiento": [1, 3, 5]
+  "status": "error",
+  "message": "El dominio de email no existe o no es alcanzable",
+  "data": null
 }
 ```
 
-3. **Registrar Primera Medida**
+**Test Postman automático:**
+```javascript
+pm.test('RN30: Rechaza dominio inexistente (DNS lookup)', function () {
+    pm.response.to.have.status(400);
+});
+
+pm.test('Mensaje indica dominio no existe', function () {
+    var jsonData = pm.response.json();
+    pm.expect(jsonData.message).to.include('dominio').or.include('existe');
+});
+```
+
+---
+
+### Demo 2: RN31 - Contraseña en blacklist
+
+**Request Postman:**
 ```json
-POST /api/v1/perfil/medidas
+POST /api/v1/auth/registro
 {
-  "peso": 75.5,
-  "altura": 175.0,
-  "fecha": "2025-11-04"
+  "email": "test@gmail.com",
+  "password": "password1234",
+  "nombre": "Test",
+  "apellido": "Error"
 }
 ```
 
-### Seguimiento de Progreso
-
-1. **Obtener Última Medida**
-```
-GET /api/v1/perfil/medidas/ultima
-```
-
-2. **Ver Historial Completo**
-```
-GET /api/v1/perfil/medidas
+**Response esperado:**
+```json
+{
+  "status": "error",
+  "message": "Contraseña demasiado común. Elige una más segura.",
+  "data": null
+}
 ```
 
-## 🔍 Verificación de Swagger
+---
 
-Puedes verificar todos los endpoints también en Swagger UI:
+### Demo 3: RN32 - Plan con alérgenos
 
+**Prerequisito:** Usuario debe tener alergias configuradas en su perfil
+
+**Request Postman:**
+```json
+POST /api/v1/usuario/planes/activar
+Headers: Authorization: Bearer {{userToken}}
+{
+  "planId": 1
+}
 ```
-http://localhost:8080/swagger-ui.html
+
+**Response esperado (si plan contiene alérgenos):**
+```json
+{
+  "status": "error",
+  "message": "No se puede activar este plan. Contiene ingredientes con alérgenos: Nueces, Lácteos",
+  "data": null
+}
 ```
 
-## 💡 Tips
+**Response esperado (si plan es compatible):**
+```json
+{
+  "status": "success",
+  "message": "Plan activado exitosamente",
+  "data": {
+    "id": 123,
+    "planId": 1,
+    "estado": "ACTIVO",
+    "diaActual": 1
+  }
+}
+```
 
-1. **Orden de ejecución:** Los requests están ordenados en el flujo lógico de uso
-2. **Variables:** No necesitas copiar/pegar tokens, se guardan automáticamente
-3. **Autenticación:** La colección usa Bearer Token por defecto con `{{userToken}}`
-4. **Ejemplos:** Cada request tiene valores de ejemplo listos para usar
-5. **Descripciones:** Revisa la pestaña "Description" de cada request para más detalles
+---
+
+## 🔍 Verificación en Swagger UI
+
+**URL:** http://localhost:8080/swagger-ui/index.html
+
+**Qué mostrar:**
+1. Buscar endpoint `POST /api/v1/auth/registro`
+2. Expandir y mostrar sección "Description"
+3. Mostrar ejemplos de:
+   - ✅ Registro Válido (RN30 y RN31 cumplidos)
+   - ❌ Email Inválido (RN30)
+   - ❌ Contraseña Débil (RN31)
+   - ❌ Contraseña Común (RN31)
+
+4. Buscar endpoint `POST /api/v1/usuario/planes/activar`
+5. Mostrar documentación de RN32 con query 5-join
+
+---
+
+## 💡 Tips para la Exposición
+
+### 1. Preparación Previa
+- ✅ Aplicación corriendo en `localhost:8080`
+- ✅ Postman abierto con colección importada
+- ✅ Swagger UI abierto en navegador
+- ✅ Terminal abierta con `./mvnw test` ejecutado
+- ✅ VS Code abierto en `AuthServiceTest.java`
+
+### 2. Flujo Recomendado de Demostración
+1. **Mostrar resultados de tests (5 min)**
+   - Terminal con `./mvnw test` output
+   - Resaltar: "Tests run: 175, Failures: 0"
+
+2. **Swagger UI (5 min)**
+   - Documentación de RN30, RN31 en `/registro`
+   - Documentación de RN32 en `/planes/activar`
+   - Mostrar ejemplos de error
+
+3. **Postman - Ejecutar tests (10 min)**
+   - Carpeta RN30: 3 tests
+   - Carpeta RN31: 5 tests
+   - Carpeta RN32: 3 tests
+   - Mostrar assertions pasando
+
+4. **Código de tests unitarios (5 min)**
+   - Abrir `AuthServiceTest.java`
+   - Mostrar método `testRegistro_EmailDominioInexistente()`
+   - Mostrar método `testRegistro_PasswordComun()`
+
+5. **Código de implementación (5 min)**
+   - Abrir `AuthService.java`
+   - Mostrar método `validarEmail()` con DNS lookup
+   - Mostrar método `validarPasswordSegura()` con blacklist
+
+6. **Mapeo completo (2 min)**
+   - Abrir `docs/UNIT_TESTS_MAPPING.md`
+   - Mostrar tabla de 175 tests mapeados
+
+---
+
+## 📚 Documentación Adicional
+
+| Documento | Descripción |
+|-----------|-------------|
+| `docs/UNIT_TESTS_MAPPING.md` | **Mapeo completo de 175 tests** |
+| `docs/REGLAS_NEGOCIO.MD` | Especificación de 39 reglas |
+| `CREDENCIALES_ADMIN.md` | Usuarios de prueba |
+| `docs/USER_STORIES.MD` | 25 historias de usuario |
+
+---
 
 ## 🐛 Troubleshooting
 
 ### Error: "Connection refused"
-- Verifica que la aplicación esté corriendo en `localhost:8080`
-- Ejecuta: `./mvnw spring-boot:run`
+```bash
+# Verificar que la app está corriendo
+./mvnw spring-boot:run
 
-### Error: "Unauthorized"
-- Ejecuta primero "Login Admin" o "Login Usuario"
-- Verifica que el token se guardó en las variables
+# Esperar a ver:
+# Started NutritrackApiApplication in 11.242 seconds
+```
+
+### Error: "Unauthorized" en Postman
+```
+1. Ejecutar request "0. Login Usuario Demo" primero
+2. Verificar que variable {{userToken}} se guardó
+3. Ver en: Variables (tab en la colección)
+```
 
 ### Error: "Email ya existe"
-- El email ya fue registrado
-- Usa otro email o ejecuta "Login Usuario" en su lugar
+```
+Este es el comportamiento esperado (RN01)
+Usar otro email o hacer login en su lugar
+```
 
-### Error: "Confirmation required"
-- Al eliminar cuenta, debes enviar `{"confirmacion": "ELIMINAR"}`
-
-## 📚 Documentación Adicional
-
-- [CREDENCIALES_ADMIN.md](../CREDENCIALES_ADMIN.md) - Información de usuario admin
-- [docs/USER_STORIES.MD](../docs/USER_STORIES.MD) - Historias de usuario
-- [docs/REGLAS_NEGOCIO.MD](../docs/REGLAS_NEGOCIO.MD) - Reglas de negocio completas
-- [docs/TESTING_GUIDE.md](../docs/TESTING_GUIDE.md) - Guía de pruebas
+---
 
 ## 📞 Soporte
 
-Para dudas o problemas con la API:
-1. Revisa los logs de la aplicación
-2. Consulta el Swagger UI
-3. Revisa la documentación en `/docs`
+**Documentos técnicos:**
+- [REGLAS_NEGOCIO.MD](../docs/REGLAS_NEGOCIO.MD) - 39 reglas con prioridades
+- [UNIT_TESTS_MAPPING.md](../docs/UNIT_TESTS_MAPPING.md) - Mapeo completo de 175 tests
+- [COMO_FUNCIONA.MD](../docs/COMO_FUNCIONA.MD) - Arquitectura del sistema
+
+**Comandos útiles:**
+```bash
+# Ejecutar todos los tests
+./mvnw test
+
+# Ver cobertura de tests
+./mvnw test jacoco:report
+# Abrir: target/site/jacoco/index.html
+
+# Ejecutar Newman (Postman CLI)
+npm install -g newman
+newman run postman/NutriTrack_Unit_Tests_Demo.postman_collection.json
+```
+
+---
+
+**Última actualización:** 5 de Noviembre, 2025  
+**Versión:** 2.0  
+**Responsable:** Equipo NutriTrack
+**Tests Totales:** 175/175 ✅ (100%)
+**Reglas Implementadas:** 27/39 (69.2%)

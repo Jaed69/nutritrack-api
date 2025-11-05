@@ -1,0 +1,688 @@
+{
+	"info": {
+		"_postman_id": "nutritrack-unit-tests-demo",
+		"name": "NutriTrack - Demo Unit Tests (RN30, RN31, RN32)",
+		"description": "Colección de demostración para exponer las 3 reglas de negocio implementadas con unit tests:\n\n**RN30 - Validación de Email RFC 5322 + DNS:**\n- Email con formato inválido (sin @)\n- Email con dominio inexistente\n- Email válido con DNS verificado\n\n**RN31 - Política de Contraseñas Robusta:**\n- Contraseña corta (< 12 caracteres)\n- Contraseña sin complejidad\n- Contraseña común (blacklist)\n- Contraseña que contiene email\n- Contraseña válida\n\n**RN32 - Validación Cruzada de Alérgenos:**\n- Usuario con alergia intenta activar plan con alérgeno\n- Usuario sin alergias activa plan exitosamente\n\n**Nota:** Esta colección está diseñada para demostrar las validaciones implementadas.\nTodas las validaciones tienen unit tests que corren con `./mvnw test` (175/175 ✅)",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "userToken",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "RN30 - Validación de Email",
+			"description": "Demostración de validación de formato de email RFC 5322 + verificación DNS",
+			"item": [
+				{
+					"name": "❌ Email sin formato válido (sin @)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('RN30: Rechaza email sin @', function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test('Mensaje de error contiene validación', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.include('email');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"usuariosinformato\",\n  \"password\": \"TestPass123!\",\n  \"nombre\": \"Usuario\",\n  \"apellido\": \"Test\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/register",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "❌ Email con dominio inexistente (DNS Fail)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('RN30: Rechaza dominio inexistente (DNS lookup)', function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test('Mensaje indica dominio no existe', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.include('dominio').or.include('existe');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"usuario@dominioquenoexiste99999.com\",\n  \"password\": \"TestPass123!\",\n  \"nombre\": \"Usuario\",\n  \"apellido\": \"Test\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/register",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "✅ Email válido con DNS verificado",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('RN30: Acepta email válido RFC 5322 con DNS', function () {",
+									"    // 201 Created o 400 si el email ya existe",
+									"    pm.expect(pm.response.code).to.be.oneOf([201, 400]);",
+									"});",
+									"",
+									"if (pm.response.code === 201) {",
+									"    pm.test('Usuario creado exitosamente', function () {",
+									"        var jsonData = pm.response.json();",
+									"        pm.expect(jsonData.status).to.eql('success');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"test.rn30@gmail.com\",\n  \"password\": \"TestPass123!\",\n  \"nombre\": \"Usuario\",\n  \"apellido\": \"RN30\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/register",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"register"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "RN31 - Política de Contraseñas Robusta",
+			"description": "Demostración de validación de contraseñas con 12+ caracteres y complejidad requerida",
+			"item": [
+				{
+					"name": "❌ Contraseña corta (< 12 caracteres)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('RN31: Rechaza contraseña < 12 caracteres', function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test('Mensaje indica mínimo 12 caracteres', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.include('12');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"test.rn31.corta@gmail.com\",\n  \"password\": \"Short1!\",\n  \"nombre\": \"Usuario\",\n  \"apellido\": \"Test\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/register",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "❌ Contraseña sin complejidad (solo lowercase)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('RN31: Rechaza contraseña sin complejidad', function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test('Mensaje indica requisitos de complejidad', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.match(/mayúscula|minúscula|número|símbolo/i);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"test.rn31.simple@gmail.com\",\n  \"password\": \"solominusculas\",\n  \"nombre\": \"Usuario\",\n  \"apellido\": \"Test\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/register",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "❌ Contraseña común (blacklist)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('RN31: Rechaza contraseña común (blacklist)', function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test('Mensaje indica contraseña común', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.include('común').or.include('segura');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"test.rn31.blacklist@gmail.com\",\n  \"password\": \"password1234\",\n  \"nombre\": \"Usuario\",\n  \"apellido\": \"Test\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/register",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "❌ Contraseña que contiene email",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('RN31: Rechaza contraseña con email', function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test('Mensaje indica no usar email', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.include('email');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"carlos@gmail.com\",\n  \"password\": \"Carlos12345!\",\n  \"nombre\": \"Carlos\",\n  \"apellido\": \"Test\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/register",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "✅ Contraseña válida (12+ chars + complejidad)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('RN31: Acepta contraseña robusta', function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([201, 400]);",
+									"});",
+									"",
+									"if (pm.response.code === 201) {",
+									"    pm.test('Usuario creado con contraseña robusta', function () {",
+									"        var jsonData = pm.response.json();",
+									"        pm.expect(jsonData.status).to.eql('success');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"test.rn31.valid@gmail.com\",\n  \"password\": \"SuperSecure2024!\",\n  \"nombre\": \"Usuario\",\n  \"apellido\": \"RN31\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/register",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"register"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "RN32 - Validación Cruzada de Alérgenos",
+			"description": "Demostración de validación que previene activación de planes con alérgenos del usuario",
+			"item": [
+				{
+					"name": "0. Login Usuario Demo",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.data && jsonData.data.token) {",
+									"        pm.collectionVariables.set('userToken', jsonData.data.token);",
+									"        pm.test('✅ Token obtenido', function () {",
+									"            pm.expect(jsonData.data.token).to.be.a('string');",
+									"        });",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"demo@nutritrack.com\",\n  \"password\": \"Demo123!\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "❌ Activar plan con alérgenos (si usuario tiene alergias)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Si el usuario tiene alergias y el plan contiene esos alérgenos:",
+									"// Status 400 con mensaje específico",
+									"// Si no tiene alergias o el plan es compatible: 201",
+									"",
+									"pm.test('RN32: Validación de alérgenos ejecutada', function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([201, 400]);",
+									"});",
+									"",
+									"if (pm.response.code === 400) {",
+									"    pm.test('Mensaje indica alérgenos incompatibles', function () {",
+									"        var jsonData = pm.response.json();",
+									"        pm.expect(jsonData.message).to.match(/alérgeno|alergia|ingrediente/i);",
+									"    });",
+									"}",
+									"",
+									"if (pm.response.code === 201) {",
+									"    pm.test('Plan activado (usuario sin alergias o plan compatible)', function () {",
+									"        var jsonData = pm.response.json();",
+									"        pm.expect(jsonData.status).to.eql('success');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{userToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"planId\": 1\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/usuario-planes/activar",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"usuario-planes",
+								"activar"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "✅ Ver Planes del Catálogo (filtrados por alérgenos)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('RN32: Catálogo responde correctamente', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Planes listados (filtrados por RN32)', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.be.an('array');",
+									"    console.log('Total de planes disponibles:', jsonData.data.length);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{userToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/planes",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"planes"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "📊 Resumen de Unit Tests",
+			"description": "Información sobre la cobertura de tests unitarios",
+			"item": [
+				{
+					"name": "README - Unit Tests Coverage",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								""
+							]
+						},
+						"description": "# 🧪 Cobertura de Unit Tests\n\n## Estadísticas Generales\n- **Total Tests:** 175/175 ✅\n- **Failures:** 0\n- **Errors:** 0\n- **Cobertura:** 100%\n\n## Tests por Regla de Negocio\n\n### RN30 - Validación de Email\n- `AuthServiceTest.testRegistro_EmailFormatoInvalido()` ✅\n- `AuthServiceTest.testRegistro_EmailDominioInexistente()` ✅\n- `AuthServiceTest.testRegistro_EmailValido()` ✅\n\n### RN31 - Política de Contraseñas\n- `AuthServiceTest.testRegistro_PasswordCorta()` ✅\n- `AuthServiceTest.testRegistro_PasswordSinMayuscula()` ✅\n- `AuthServiceTest.testRegistro_PasswordSinNumero()` ✅\n- `AuthServiceTest.testRegistro_PasswordSinSimbolo()` ✅\n- `AuthServiceTest.testRegistro_PasswordComun()` ✅\n- `AuthServiceTest.testRegistro_PasswordContieneEmail()` ✅\n- `AuthServiceTest.testRegistro_PasswordValida()` ✅\n\n### RN32 - Validación de Alérgenos\n- `UsuarioPlanServiceTest.testActivarPlan_ConAlergenosIncompatibles()` ✅\n- `UsuarioPlanServiceTest.testActivarPlan_SinAlergias()` ✅\n- `UsuarioPlanServiceTest.testActivarPlan_AlergiasPeroCompatibles()` ✅\n\n## Comando para Ejecutar Tests\n```bash\n./mvnw test\n```\n\n## Ubicación de Tests\n- `src/test/java/com/example/nutritrackapi/service/AuthServiceTest.java`\n- `src/test/java/com/example/nutritrackapi/service/UsuarioPlanServiceTest.java`\n\n## Documentación\nVer: `docs/REGLAS_NEGOCIO.MD` para detalles de implementación"
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

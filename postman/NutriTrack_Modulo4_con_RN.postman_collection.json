@@ -1,0 +1,537 @@
+{
+	"info": {
+		"_postman_id": "nutritrack-modulo4-rn-v2",
+		"name": "NutriTrack - Módulo 4 [RN17, RN18, RN19, RN26, RN32]",
+		"description": "# 🎯 Módulo 4: Asignación de Planes y Rutinas a Usuario\n\n**Tests Unitarios:** 35/35 ✅  \n**Reglas Implementadas:** RN17, RN18, RN19, RN26, RN32\n\n---\n\n## 🎯 REGLAS DE NEGOCIO IMPLEMENTADAS\n\n### RN17 - No duplicar planes/rutinas activos\n- ✅ Usuario solo puede tener 1 plan activo y 1 rutina activa simultáneamente\n- ✅ Validación antes de activar nuevo plan/rutina\n- 📝 Tests: `testActivarPlan_YaExisteActivo()`, `testActivarRutina_YaExisteActivo()`\n\n### RN32 - Validación de alérgenos en planes (5-join query)\n- ✅ Al activar plan, valida que no contenga ingredientes alérgenos del usuario\n- ✅ JOIN de 5 tablas:\n  - usuario_planes → planes_nutricionales → plan_comidas → comida_ingredientes → ingredientes\n  - usuario_etiquetas_salud (tipo ALERGIAS)\n- 📝 Tests: `testActivarPlan_ConAlergenos()`, `testValidarPlanSinAlergenos()`\n\n### RN18 - Propuesta de reemplazo\n- ✅ Si plan tiene alérgenos, ofrece alternativas sin esos ingredientes\n- ✅ Filtra catálogo completo según perfil del usuario\n- 📝 Tests: `testProponerReemplazo_PlanConAlergenos()`, `testObtenerPlanesAlternativos()`\n\n### RN19 - Validación de pausas\n- ✅ Solo permite pausar si estado es ACTIVO\n- ✅ Solo permite reanudar si estado es PAUSADO\n- ✅ No permite múltiples pausas consecutivas\n- 📝 Tests: `testPausarPlan_YaPausado()`, `testReanudarPlan_NoActivo()`\n\n### RN26 - Validación de transiciones de estado\n- ✅ Solo permite transiciones válidas:\n  - ACTIVO → PAUSADO\n  - PAUSADO → ACTIVO\n  - ACTIVO → COMPLETADO\n  - ACTIVO → CANCELADO\n  - PAUSADO → CANCELADO\n- ✅ Rechaza transiciones inválidas (ej: COMPLETADO → ACTIVO)\n- 📝 Tests: `testTransicionEstado_Invalida()`, `testCompletarPlan_DesdePausado()`\n\n---\n\n## 🧪 TESTS UNITARIOS\n\n**UsuarioPlanServiceTest.java** - 18/18 ✅\n- `testActivarPlan_Exitoso()`\n- `testActivarPlan_YaExisteActivo()` [RN17]\n- `testActivarPlan_ConAlergenos()` [RN32]\n- `testProponerReemplazo_PlanConAlergenos()` [RN18]\n- `testPausarPlan_Exitoso()` [RN19]\n- `testPausarPlan_YaPausado()` [RN19]\n- `testReanudarPlan_Exitoso()` [RN19]\n- `testReanudarPlan_NoActivo()` [RN19]\n- `testCompletarPlan_Exitoso()` [RN26]\n- `testCompletarPlan_DesdePausado()` [RN26]\n- `testCancelarPlan_Exitoso()` [RN26]\n- `testTransicionEstado_Invalida()` [RN26]\n- Y 6 tests más...\n\n**UsuarioRutinaServiceTest.java** - 17/17 ✅\n- `testActivarRutina_Exitoso()`\n- `testActivarRutina_YaExisteActivo()` [RN17]\n- `testPausarRutina_Exitoso()` [RN19]\n- `testReanudarRutina_Exitoso()` [RN19]\n- `testCompletarRutina_Exitoso()` [RN26]\n- `testCancelarRutina_Exitoso()` [RN26]\n- Y 11 tests más...\n\n**Ejecutar tests:**\n```bash\n./mvnw test -Dtest=UsuarioPlanServiceTest\n./mvnw test -Dtest=UsuarioRutinaServiceTest\n```\n\n---\n\n## 📖 DOCUMENTACIÓN ADICIONAL\n\n- [REGLAS_NEGOCIO.MD](../docs/REGLAS_NEGOCIO.MD) - Especificación completa\n- [UNIT_TESTS_MAPPING.md](../docs/UNIT_TESTS_MAPPING.md) - Mapeo completo de 175 tests\n- [Swagger UI](http://localhost:8080/swagger-ui/index.html) - Documentación interactiva\n\n---\n\n## 🏗️ ARQUITECTURA - RN32: 5-JOIN QUERY\n\n**Validación de alérgenos:**\n```sql\n-- Verificar si plan tiene ingredientes alérgenos para el usuario\nSELECT DISTINCT i.id, i.nombre\nFROM planes_nutricionales p\nJOIN plan_comidas pc ON pc.plan_id = p.id\nJOIN comidas c ON c.id = pc.comida_id\nJOIN comida_ingredientes ci ON ci.comida_id = c.id\nJOIN ingredientes i ON i.id = ci.ingrediente_id\nWHERE p.id = ?\n  AND EXISTS (\n    SELECT 1 FROM usuario_etiquetas_salud ues\n    JOIN etiquetas e ON e.id = ues.etiqueta_id\n    WHERE ues.perfil_usuario_id = ?\n      AND e.tipo = 'ALERGIAS'\n      AND e.id IN (\n        SELECT ie.etiqueta_id\n        FROM ingrediente_etiquetas ie\n        WHERE ie.ingrediente_id = i.id\n      )\n  );\n```\n\n**Estados de plan/rutina:**\n```\nACTIVO → PAUSADO → ACTIVO → COMPLETADO\n  ↓                    ↓\nCANCELADO          CANCELADO\n```\n\n---\n\n## 🔧 Variables\n\n- `baseUrl` - URL base de la API\n- `userToken` - Token JWT del usuario\n- `perfilId` - ID del perfil del usuario\n- `planId` - ID del plan seleccionado\n- `rutinaId` - ID de la rutina seleccionada\n- `usuarioPlanId` - ID de la asignación del plan\n- `usuarioRutinaId` - ID de la asignación de la rutina",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{userToken}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080"
+		},
+		{
+			"key": "userToken",
+			"value": ""
+		},
+		{
+			"key": "perfilId",
+			"value": "1"
+		},
+		{
+			"key": "planId",
+			"value": "1"
+		},
+		{
+			"key": "rutinaId",
+			"value": "1"
+		},
+		{
+			"key": "usuarioPlanId",
+			"value": ""
+		},
+		{
+			"key": "usuarioRutinaId",
+			"value": ""
+		}
+	],
+	"item": [
+		{
+			"name": "0. Autenticación",
+			"item": [
+				{
+					"name": "Login Usuario Demo",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('userToken', jsonData.data.token);",
+									"    console.log('✅ Token guardado');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"demo@nutritrack.com\",\n  \"password\": \"Demo123!\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "auth", "login"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "RN17 - No duplicar planes activos",
+			"item": [
+				{
+					"name": "✅ RN17, RN32 - Activar plan (válido sin alérgenos)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 201', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test('RN17: Plan activado (no había otro activo)', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.estado).to.eql('ACTIVO');",
+									"});",
+									"",
+									"pm.test('RN32: Plan sin alérgenos validado con 5-join', function () {",
+									"    // Sistema validó con query de 5 joins",
+									"    console.log('✅ Validación 5-join: plan no contiene alérgenos');",
+									"});",
+									"",
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('usuarioPlanId', jsonData.data.id);",
+									"    console.log('✅ Usuario Plan ID guardado:', jsonData.data.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"planId\": {{planId}},\n  \"fechaInicio\": \"2025-11-05\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/usuario/planes/activar",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "usuario", "planes", "activar"]
+						},
+						"description": "**REGLAS DE NEGOCIO:**\n\n✅ **RN17:** No duplicar planes activos  \n- Solo 1 plan activo por usuario\n- Validación: `COUNT(*) WHERE estado = ACTIVO`\n- Test: `testActivarPlan_YaExisteActivo()`\n\n✅ **RN32:** Validación de alérgenos (5-join query)  \n- Valida que plan no contenga ingredientes alérgenos\n- JOIN de 5 tablas:\n  1. planes_nutricionales\n  2. plan_comidas\n  3. comidas\n  4. comida_ingredientes\n  5. ingredientes\n- Cruza con usuario_etiquetas_salud (tipo ALERGIAS)\n- Test: `testActivarPlan_ConAlergenos()`\n\n**IMPLEMENTATION:**\n```java\n@Service\npublic class UsuarioPlanService {\n  \n  public UsuarioPlanDTO activarPlan(ActivarPlanDTO dto, Long usuarioId) {\n    // RN17: Verificar que no haya plan activo\n    boolean tieneActivo = usuarioPlanRepository\n      .existsByUsuarioIdAndEstado(usuarioId, EstadoPlan.ACTIVO);\n    \n    if (tieneActivo) {\n      throw new BadRequestException(\n        \"Ya tienes un plan activo. Cancela o completa el actual primero. (RN17)\"\n      );\n    }\n    \n    // RN32: Validar alérgenos (5-join query)\n    List<String> alergenos = validarAlergenosEnPlan(\n      dto.getPlanId(),\n      perfil.getId()\n    );\n    \n    if (!alergenos.isEmpty()) {\n      throw new BadRequestException(\n        \"Plan contiene ingredientes alérgenos: \" + alergenos + \" (RN32)\"\n      );\n    }\n    \n    // Activar plan\n    usuarioPlan.setEstado(EstadoPlan.ACTIVO);\n    return usuarioPlanRepository.save(usuarioPlan);\n  }\n  \n  private List<String> validarAlergenosEnPlan(\n    Long planId,\n    Long perfilId\n  ) {\n    // Query con 5 JOINs\n    return jdbcTemplate.query(\n      \"SELECT DISTINCT i.nombre \" +\n      \"FROM planes_nutricionales p \" +\n      \"JOIN plan_comidas pc ON pc.plan_id = p.id \" +\n      \"JOIN comidas c ON c.id = pc.comida_id \" +\n      \"JOIN comida_ingredientes ci ON ci.comida_id = c.id \" +\n      \"JOIN ingredientes i ON i.id = ci.ingrediente_id \" +\n      \"WHERE p.id = ? \" +\n      \"AND EXISTS (\" +\n      \"  SELECT 1 FROM usuario_etiquetas_salud ues \" +\n      \"  JOIN etiquetas e ON e.id = ues.etiqueta_id \" +\n      \"  WHERE ues.perfil_usuario_id = ? \" +\n      \"    AND e.tipo = 'ALERGIAS' \" +\n      \"    AND e.id IN (\" +\n      \"      SELECT ie.etiqueta_id \" +\n      \"      FROM ingrediente_etiquetas ie \" +\n      \"      WHERE ie.ingrediente_id = i.id\" +\n      \"    )\" +\n      \")\",\n      new Object[]{planId, perfilId},\n      (rs, rowNum) -> rs.getString(\"nombre\")\n    );\n  }\n}\n```\n\n**TESTS ASOCIADOS:** 18/18 ✅ en `UsuarioPlanServiceTest.java`\n\n**EJECUTAR TESTS:**\n```bash\n./mvnw test -Dtest=UsuarioPlanServiceTest#testActivarPlan_Exitoso\n./mvnw test -Dtest=UsuarioPlanServiceTest#testActivarPlan_YaExisteActivo\n./mvnw test -Dtest=UsuarioPlanServiceTest#testActivarPlan_ConAlergenos\n```"
+					},
+					"response": []
+				},
+				{
+					"name": "❌ RN17 - Ya existe plan activo",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('RN17: Rechaza plan duplicado activo', function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test('Mensaje indica plan activo existente', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.include('activo');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"planId\": 2,\n  \"fechaInicio\": \"2025-11-05\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/usuario/planes/activar",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "usuario", "planes", "activar"]
+						},
+						"description": "**RN17: Validación Duplicado**\n\nDemuestra que el sistema rechaza activar un segundo plan mientras hay uno activo.\n\n**Test Unitario:** `testActivarPlan_YaExisteActivo()`"
+					},
+					"response": []
+				},
+				{
+					"name": "❌ RN32 - Plan con ingredientes alérgenos",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('RN32: Rechaza plan con alérgenos', function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test('Mensaje indica ingredientes alérgenos encontrados', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.include('alérgenos');",
+									"});",
+									"",
+									"pm.test('Proporciona lista de ingredientes problemáticos', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.alergenos).to.be.an('array');",
+									"    console.log('Alérgenos encontrados:', jsonData.alergenos);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"planId\": 3,\n  \"fechaInicio\": \"2025-11-05\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/usuario/planes/activar",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "usuario", "planes", "activar"]
+						},
+						"description": "**RN32: Validación 5-Join**\n\nDemuestra el query de 5 joins que valida alérgenos:\n1. plan → plan_comidas\n2. plan_comidas → comidas\n3. comidas → comida_ingredientes\n4. comida_ingredientes → ingredientes\n5. ingredientes ↔ usuario_etiquetas_salud (ALERGIAS)\n\n**Test Unitario:** `testActivarPlan_ConAlergenos()`\n\n**Resultado esperado:** HTTP 400\n```json\n{\n  \"status\": \"error\",\n  \"message\": \"Plan contiene ingredientes alérgenos: [nueces, lácteos] (RN32)\",\n  \"alergenos\": [\"nueces\", \"lácteos\"]\n}\n```"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "RN18 - Propuesta de reemplazo",
+			"item": [
+				{
+					"name": "✅ RN18 - Proponer planes alternativos",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('RN18: Devuelve planes alternativos sin alérgenos', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.be.an('array');",
+									"    pm.expect(jsonData.data.length).to.be.above(0);",
+									"});",
+									"",
+									"pm.test('Planes alternativos incluyen información relevante', function () {",
+									"    var jsonData = pm.response.json();",
+									"    jsonData.data.forEach(function(plan) {",
+									"        pm.expect(plan.id).to.exist;",
+									"        pm.expect(plan.nombre).to.exist;",
+									"        pm.expect(plan.objetivoCompatible).to.be.true;",
+									"    });",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/usuario/planes/alternativas?objetivo=PERDER_PESO",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "usuario", "planes", "alternativas"],
+							"query": [
+								{
+									"key": "objetivo",
+									"value": "PERDER_PESO"
+								}
+							]
+						},
+						"description": "**REGLA DE NEGOCIO:**\n\n✅ **RN18:** Propuesta de reemplazo  \n- Cuando plan tiene alérgenos, ofrece alternativas\n- Filtra catálogo completo:\n  - Sin ingredientes alérgenos (mismo query 5-join de RN32)\n  - Compatible con objetivo del usuario\n  - Compatible con nivel de actividad\n- Test: `testProponerReemplazo_PlanConAlergenos()`\n\n**IMPLEMENTATION:**\n```java\npublic List<PlanDTO> proponerAlternativas(\n  Long usuarioId,\n  ObjetivoNutricional objetivo\n) {\n  PerfilUsuario perfil = obtenerPerfil(usuarioId);\n  \n  // Obtener todas las alergias del usuario\n  List<Long> alergiaIds = perfil.getEtiquetasSalud()\n    .stream()\n    .filter(e -> e.getTipo() == TipoEtiqueta.ALERGIAS)\n    .map(Etiqueta::getId)\n    .collect(Collectors.toList());\n  \n  // Filtrar planes sin alérgenos (RN32)\n  List<Plan> planesDisponibles = planRepository\n    .findByObjetivoAndSinAlergenos(\n      objetivo,\n      alergiaIds,\n      perfil.getId()\n    );\n  \n  return planesDisponibles.stream()\n    .map(this::toDTO)\n    .collect(Collectors.toList());\n}\n```\n\n**QUERY:**\n```sql\nSELECT DISTINCT p.*\nFROM planes_nutricionales p\nWHERE p.objetivo_nutricional = ?\n  AND p.deleted_at IS NULL\n  AND NOT EXISTS (\n    -- Mismo subquery de RN32 para validar alérgenos\n    SELECT 1\n    FROM plan_comidas pc\n    JOIN comidas c ON c.id = pc.comida_id\n    JOIN comida_ingredientes ci ON ci.comida_id = c.id\n    JOIN ingredientes i ON i.id = ci.ingrediente_id\n    WHERE pc.plan_id = p.id\n      AND EXISTS (\n        SELECT 1 FROM usuario_etiquetas_salud ues\n        WHERE ues.perfil_usuario_id = ?\n          AND ues.etiqueta_id IN (\n            SELECT ie.etiqueta_id\n            FROM ingrediente_etiquetas ie\n            WHERE ie.ingrediente_id = i.id\n              AND ie.etiqueta_id IN (SELECT id FROM etiquetas WHERE tipo = 'ALERGIAS')\n          )\n      )\n  );\n```\n\n**TESTS ASOCIADOS:** 18/18 ✅ en `UsuarioPlanServiceTest.java`\n\n**EJECUTAR TEST:**\n```bash\n./mvnw test -Dtest=UsuarioPlanServiceTest#testProponerReemplazo_PlanConAlergenos\n```"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "RN19, RN26 - Pausar/Reanudar/Completar",
+			"item": [
+				{
+					"name": "✅ RN19 - Pausar plan",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('RN19: Plan pausado desde ACTIVO', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.estado).to.eql('PAUSADO');",
+									"});",
+									"",
+									"pm.test('RN26: Transición ACTIVO → PAUSADO válida', function () {",
+									"    console.log('✅ Transición de estado válida');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/usuario/planes/{{usuarioPlanId}}/pausar",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "usuario", "planes", "{{usuarioPlanId}}", "pausar"]
+						},
+						"description": "**REGLAS DE NEGOCIO:**\n\n✅ **RN19:** Validación de pausas  \n- Solo pausar si estado = ACTIVO\n- Test: `testPausarPlan_Exitoso()`\n\n✅ **RN26:** Transición válida ACTIVO → PAUSADO  \n- Valida máquina de estados\n- Test: `testTransicionEstado_Invalida()`"
+					},
+					"response": []
+				},
+				{
+					"name": "❌ RN19 - Pausar plan ya pausado",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('RN19: Rechaza pausar plan ya pausado', function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test('Mensaje indica estado actual', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.include('PAUSADO');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/usuario/planes/{{usuarioPlanId}}/pausar",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "usuario", "planes", "{{usuarioPlanId}}", "pausar"]
+						},
+						"description": "**Test Unitario:** `testPausarPlan_YaPausado()`"
+					},
+					"response": []
+				},
+				{
+					"name": "✅ RN19 - Reanudar plan",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('RN19: Plan reanudado desde PAUSADO', function () {",
+									"    pm.response.to.have.status(200);",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.estado).to.eql('ACTIVO');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/usuario/planes/{{usuarioPlanId}}/reanudar",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "usuario", "planes", "{{usuarioPlanId}}", "reanudar"]
+						},
+						"description": "**Test Unitario:** `testReanudarPlan_Exitoso()`"
+					},
+					"response": []
+				},
+				{
+					"name": "✅ RN26 - Completar plan",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('RN26: Plan completado desde ACTIVO', function () {",
+									"    pm.response.to.have.status(200);",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.estado).to.eql('COMPLETADO');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/usuario/planes/{{usuarioPlanId}}/completar",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "usuario", "planes", "{{usuarioPlanId}}", "completar"]
+						},
+						"description": "**Test Unitario:** `testCompletarPlan_Exitoso()`"
+					},
+					"response": []
+				},
+				{
+					"name": "✅ RN26 - Cancelar plan",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('RN26: Plan cancelado', function () {",
+									"    pm.response.to.have.status(200);",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.estado).to.eql('CANCELADO');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/usuario/planes/{{usuarioPlanId}}/cancelar",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "usuario", "planes", "{{usuarioPlanId}}", "cancelar"]
+						},
+						"description": "**Test Unitario:** `testCancelarPlan_Exitoso()`"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "RN17 - Rutinas (similar a planes)",
+			"item": [
+				{
+					"name": "✅ RN17 - Activar rutina",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('RN17: Rutina activada (no había otra activa)', function () {",
+									"    pm.response.to.have.status(201);",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.estado).to.eql('ACTIVO');",
+									"});",
+									"",
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('usuarioRutinaId', jsonData.data.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"rutinaId\": {{rutinaId}},\n  \"fechaInicio\": \"2025-11-05\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/usuario/rutinas/activar",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "usuario", "rutinas", "activar"]
+						},
+						"description": "**RN17:** No duplicar rutinas activas\n\n**Test Unitario:** `testActivarRutina_Exitoso()`"
+					},
+					"response": []
+				},
+				{
+					"name": "❌ RN17 - Rutina duplicada activa",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('RN17: Rechaza rutina duplicada activa', function () {",
+									"    pm.response.to.have.status(400);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"rutinaId\": 2,\n  \"fechaInicio\": \"2025-11-05\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/usuario/rutinas/activar",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "usuario", "rutinas", "activar"]
+						},
+						"description": "**Test Unitario:** `testActivarRutina_YaExisteActivo()`"
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

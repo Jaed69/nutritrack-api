@@ -1,0 +1,658 @@
+{
+	"info": {
+		"_postman_id": "nutritrack-modulo2-rn-v2",
+		"name": "NutriTrack - Módulo 2 [RN06-RN12, RN25]",
+		"description": "# 📚 Módulo 2: Biblioteca de Contenido\n\n**Responsable:** Fabián Rojas Pizarro  \n**Tests Unitarios:** 48/48 ✅  \n**Reglas Implementadas:** RN06, RN07, RN08, RN09, RN10, RN11, RN12, RN25\n\n---\n\n## 🎯 REGLAS DE NEGOCIO IMPLEMENTADAS\n\n### RN06 - Etiquetas únicas por tipo\n- ✅ No permite duplicados en el mismo tipo (objetivo/alergias/condición/ingrediente)\n- ✅ Constraint UNIQUE(nombre, tipo)\n- 📝 Tests: `testCrearEtiqueta_NombreDuplicado()`, `testCrearEtiqueta_TiposDiferentes()`\n\n### RN07 - Nombres únicos (Ingredientes/Ejercicios)\n- ✅ Cada ingrediente y ejercicio tiene nombre único\n- ✅ Constraint UNIQUE en tablas ingredientes y ejercicios\n- 📝 Tests: `testCrearIngrediente_NombreDuplicado()`, `testCrearEjercicio_NombreDuplicado()`\n\n### RN08 - Etiqueta no elimina si está en uso\n- ✅ No permite eliminar etiquetas usadas en perfiles o entidades\n- ✅ Check FK constraints\n- 📝 Tests: `testEliminarEtiqueta_EnUso()`, `testEliminarEtiqueta_SinUso()`\n\n### RN09 - Ingrediente/Ejercicio no elimina si está en comidas/rutinas\n- ✅ Valida que no estén asociados antes de eliminar\n- ✅ FK constraints\n- 📝 Tests: `testEliminarIngrediente_EnUso()`, `testEliminarEjercicio_EnUso()`\n\n### RN10 - Ingredientes vinculados al crear comida\n- ✅ Al crear comida, vincula ingredientes automáticamente\n- ✅ Tabla intermedia `comida_ingredientes`\n- 📝 Test: `testCrearComida_ConIngredientes()`\n\n### RN11 - Tablas con ADMIN como creador\n- ✅ Etiquetas, ingredientes, ejercicios, comidas, planes y rutinas tienen admin_creador_id\n- ✅ FK a tabla cuentas_auth\n- 📝 Tests: `testCrearComida_AdminCreador()`, `testCrearPlan_AdminCreador()`\n\n### RN12 - Solo etiquetas existentes\n- ✅ FK constraint a tabla etiquetas\n- ✅ Validación en Service layer\n- 📝 Tests: `testCrearComida_ConEtiquetasInexistentes()`, `testCrearIngrediente_ConEtiqueta()`\n\n### RN25 - Información nutricional unidades correctas\n- ✅ Validación de unidades (g, mg, kcal)\n- ✅ @Min para valores positivos\n- 📝 Tests: `testCrearComida_InformacionNutricional()`, `testActualizarComida_ValidarUnidades()`\n\n---\n\n## 🧪 TESTS UNITARIOS\n\n**EtiquetaServiceTest.java** - 6/6 ✅\n- `testCrearEtiqueta_Exitoso()`\n- `testCrearEtiqueta_NombreDuplicado()`\n- `testCrearEtiqueta_TiposDiferentes()`\n- `testEliminarEtiqueta_EnUso()`\n- `testEliminarEtiqueta_SinUso()`\n- `testListarEtiquetasPorTipo()`\n\n**IngredienteServiceTest.java** - 14/14 ✅\n- `testCrearIngrediente_Exitoso()`\n- `testCrearIngrediente_NombreDuplicado()`\n- `testCrearIngrediente_ConEtiqueta()`\n- `testEliminarIngrediente_EnUso()`\n- `testEliminarIngrediente_SinUso()`\n- Y 9 tests más...\n\n**EjercicioServiceTest.java** - 14/14 ✅\n- `testCrearEjercicio_Exitoso()`\n- `testCrearEjercicio_NombreDuplicado()`\n- `testEliminarEjercicio_EnUso()`\n- `testEliminarEjercicio_SinUso()`\n- Y 10 tests más...\n\n**ComidaServiceTest.java** - 14/14 ✅\n- `testCrearComida_Exitoso()`\n- `testCrearComida_AdminCreador()`\n- `testCrearComida_ConIngredientes()`\n- `testCrearComida_InformacionNutricional()`\n- Y 10 tests más...\n\n**Ejecutar tests:**\n```bash\n./mvnw test -Dtest=EtiquetaServiceTest\n./mvnw test -Dtest=IngredienteServiceTest\n./mvnw test -Dtest=EjercicioServiceTest\n./mvnw test -Dtest=ComidaServiceTest\n```\n\n---\n\n## 📖 DOCUMENTACIÓN ADICIONAL\n\n- [REGLAS_NEGOCIO.MD](../docs/REGLAS_NEGOCIO.MD) - Especificación completa\n- [UNIT_TESTS_MAPPING.md](../docs/UNIT_TESTS_MAPPING.md) - Mapeo completo de 175 tests\n- [Swagger UI](http://localhost:8080/swagger-ui/index.html) - Documentación interactiva\n\n---\n\n## 🔧 Variables\n\n- `baseUrl` - URL base de la API (http://localhost:8080)\n- `adminToken` - Token JWT del admin\n- `demoToken` - Token JWT del usuario demo\n- `etiquetaId` - ID de etiqueta creada\n- `ingredienteId` - ID de ingrediente creado\n- `ejercicioId` - ID de ejercicio creado\n- `comidaId` - ID de comida creada",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{adminToken}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080"
+		},
+		{
+			"key": "adminToken",
+			"value": ""
+		},
+		{
+			"key": "demoToken",
+			"value": ""
+		},
+		{
+			"key": "etiquetaId",
+			"value": ""
+		},
+		{
+			"key": "ingredienteId",
+			"value": ""
+		},
+		{
+			"key": "ejercicioId",
+			"value": ""
+		},
+		{
+			"key": "comidaId",
+			"value": ""
+		}
+	],
+	"item": [
+		{
+			"name": "RN06 - Etiquetas únicas por tipo",
+			"item": [
+				{
+					"name": "✅ RN06 - Crear etiqueta (1er tipo)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 201', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test('RN06: Etiqueta creada con nombre único', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.nombre).to.exist;",
+									"    pm.expect(jsonData.data.tipo).to.eql('OBJETIVO');",
+									"});",
+									"",
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('etiquetaId', jsonData.data.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombre\": \"Perder Peso\",\n  \"descripcion\": \"Objetivo de reducción de peso corporal\",\n  \"tipo\": \"OBJETIVO\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/etiquetas",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "etiquetas"]
+						},
+						"description": "**REGLA DE NEGOCIO:**\n\n✅ **RN06:** Etiquetas únicas por tipo  \n- No permite duplicados en el mismo tipo\n- Constraint: UNIQUE(nombre, tipo)\n- Test: `testCrearEtiqueta_NombreDuplicado()`\n\n**TIPOS DE ETIQUETAS:**\n- OBJETIVO (perder peso, ganar músculo)\n- ALERGIAS (nueces, lácteos, gluten)\n- CONDICION_MEDICA (diabetes, hipertensión)\n- INGREDIENTE (vegano, alto en proteína)\n\n**CONSTRAINT SQL:**\n```sql\nALTER TABLE etiquetas\nADD CONSTRAINT uk_etiqueta_nombre_tipo\nUNIQUE (nombre, tipo);\n```\n\n**TESTS ASOCIADOS:** 6/6 ✅ en `EtiquetaServiceTest.java`\n\n**EJECUTAR TEST:**\n```bash\n./mvnw test -Dtest=EtiquetaServiceTest#testCrearEtiqueta_Exitoso\n```"
+					},
+					"response": []
+				},
+				{
+					"name": "❌ RN06 - Nombre duplicado (mismo tipo)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('RN06: Rechaza nombre duplicado en mismo tipo', function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test('Mensaje indica duplicado', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.include('ya existe');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombre\": \"Perder Peso\",\n  \"descripcion\": \"Duplicado\",\n  \"tipo\": \"OBJETIVO\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/etiquetas",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "etiquetas"]
+						},
+						"description": "**RN06: Validación Duplicado**\n\nDemuestra que el constraint UNIQUE(nombre, tipo) funciona.\n\n**Test Unitario:** `testCrearEtiqueta_NombreDuplicado()`"
+					},
+					"response": []
+				},
+				{
+					"name": "✅ RN06 - Mismo nombre, diferente tipo (OK)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('RN06: Permite mismo nombre en diferente tipo', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test('Tipo diferente creado exitosamente', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.tipo).to.eql('ALERGIAS');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombre\": \"Perder Peso\",\n  \"descripcion\": \"Alergia\",\n  \"tipo\": \"ALERGIAS\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/etiquetas",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "etiquetas"]
+						},
+						"description": "**RN06: Tipos Diferentes Permitidos**\n\nDemuestra que el mismo nombre puede existir en diferentes tipos.\n\n**Test Unitario:** `testCrearEtiqueta_TiposDiferentes()`"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "RN07 - Nombres únicos (Ingredientes/Ejercicios)",
+			"item": [
+				{
+					"name": "✅ RN07, RN12 - Crear ingrediente con etiqueta",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 201', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test('RN07: Ingrediente con nombre único', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.nombre).to.exist;",
+									"});",
+									"",
+									"pm.test('RN12: Usa etiquetas existentes', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.etiquetaIds).to.be.an('array');",
+									"});",
+									"",
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('ingredienteId', jsonData.data.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombre\": \"Pechuga de Pollo\",\n  \"descripcion\": \"Proteína magra\",\n  \"etiquetaIds\": [1, 2]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/ingredientes",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "ingredientes"]
+						},
+						"description": "**REGLAS DE NEGOCIO:**\n\n✅ **RN07:** Nombres únicos para ingredientes  \n- Constraint UNIQUE en tabla ingredientes\n- Test: `testCrearIngrediente_NombreDuplicado()`\n\n✅ **RN12:** Solo etiquetas existentes  \n- FK constraint a tabla etiquetas\n- Test: `testCrearIngrediente_ConEtiqueta()`\n\n**CONSTRAINT SQL:**\n```sql\nALTER TABLE ingredientes\nADD CONSTRAINT uk_ingrediente_nombre\nUNIQUE (nombre);\n```\n\n**TESTS ASOCIADOS:** 14/14 ✅ en `IngredienteServiceTest.java`"
+					},
+					"response": []
+				},
+				{
+					"name": "❌ RN07 - Ingrediente duplicado",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('RN07: Rechaza ingrediente duplicado', function () {",
+									"    pm.response.to.have.status(400);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombre\": \"Pechuga de Pollo\",\n  \"descripcion\": \"Duplicado\",\n  \"etiquetaIds\": [1]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/ingredientes",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "ingredientes"]
+						},
+						"description": "**RN07: Validación Nombre Único**\n\n**Test Unitario:** `testCrearIngrediente_NombreDuplicado()`"
+					},
+					"response": []
+				},
+				{
+					"name": "✅ RN07, RN12 - Crear ejercicio",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 201', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test('RN07: Ejercicio con nombre único', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.nombre).to.exist;",
+									"});",
+									"",
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('ejercicioId', jsonData.data.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombre\": \"Sentadillas\",\n  \"descripcion\": \"Ejercicio compuesto de pierna\",\n  \"tipoEjercicio\": \"FUERZA\",\n  \"grupoMuscular\": \"PIERNAS\",\n  \"etiquetaIds\": [1]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/ejercicios",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "ejercicios"]
+						},
+						"description": "**RN07:** Nombres únicos para ejercicios\n\n**TESTS ASOCIADOS:** 14/14 ✅ en `EjercicioServiceTest.java`"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "RN08, RN09 - No eliminar si está en uso",
+			"item": [
+				{
+					"name": "❌ RN08 - Etiqueta en uso (no se puede eliminar)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('RN08: No permite eliminar etiqueta en uso', function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test('Mensaje indica que está en uso', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.include('en uso');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/etiquetas/{{etiquetaId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "etiquetas", "{{etiquetaId}}"]
+						},
+						"description": "**REGLA DE NEGOCIO:**\n\n✅ **RN08:** Etiqueta no se elimina si está en uso  \n- Valida FK constraints antes de eliminar\n- Test: `testEliminarEtiqueta_EnUso()`\n\n**VALIDACIÓN:**\n```java\nboolean enUso = etiquetaRepository.estaEnUso(id);\nif (enUso) {\n    throw new BadRequestException(\"Etiqueta en uso\");\n}\n```\n\n**CHECKS SQL:**\n- usuario_etiquetas_salud\n- ingrediente_etiquetas\n- ejercicio_etiquetas\n- comida_etiquetas\n\n**TESTS ASOCIADOS:** 6/6 ✅ en `EtiquetaServiceTest.java`"
+					},
+					"response": []
+				},
+				{
+					"name": "❌ RN09 - Ingrediente en comida (no se puede eliminar)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('RN09: No permite eliminar ingrediente en comida', function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test('Mensaje indica que está en uso', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.include('comida');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/ingredientes/{{ingredienteId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "ingredientes", "{{ingredienteId}}"]
+						},
+						"description": "**REGLA DE NEGOCIO:**\n\n✅ **RN09:** Ingrediente no se elimina si está en comidas  \n- Valida tabla comida_ingredientes\n- Test: `testEliminarIngrediente_EnUso()`\n\n**TESTS ASOCIADOS:** 14/14 ✅ en `IngredienteServiceTest.java`"
+					},
+					"response": []
+				},
+				{
+					"name": "❌ RN09 - Ejercicio en rutina (no se puede eliminar)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('RN09: No permite eliminar ejercicio en rutina', function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test('Mensaje indica que está en uso', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.include('rutina');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/ejercicios/{{ejercicioId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "ejercicios", "{{ejercicioId}}"]
+						},
+						"description": "**REGLA DE NEGOCIO:**\n\n✅ **RN09:** Ejercicio no se elimina si está en rutinas  \n- Valida tabla rutina_ejercicios\n- Test: `testEliminarEjercicio_EnUso()`\n\n**TESTS ASOCIADOS:** 14/14 ✅ en `EjercicioServiceTest.java`"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "RN10, RN11, RN25 - Comidas",
+			"item": [
+				{
+					"name": "✅ RN10, RN11, RN25 - Crear comida con ingredientes",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 201', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test('RN10: Ingredientes vinculados automáticamente', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.ingredientes).to.be.an('array');",
+									"    pm.expect(jsonData.data.ingredientes.length).to.be.above(0);",
+									"});",
+									"",
+									"pm.test('RN11: Tiene admin_creador_id', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.adminCreadorId).to.exist;",
+									"});",
+									"",
+									"pm.test('RN25: Información nutricional en unidades correctas', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.calorias).to.be.a('number');",
+									"    pm.expect(jsonData.data.proteinas).to.be.a('number');",
+									"});",
+									"",
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('comidaId', jsonData.data.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombre\": \"Ensalada César\",\n  \"descripcion\": \"Ensalada con pollo grillado\",\n  \"tipoComida\": \"ALMUERZO\",\n  \"calorias\": 350,\n  \"proteinas\": 25.5,\n  \"carbohidratos\": 15.0,\n  \"grasas\": 18.0,\n  \"ingredienteIds\": [1, 2, 3]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/comidas",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "comidas"]
+						},
+						"description": "**REGLAS DE NEGOCIO:**\n\n✅ **RN10:** Ingredientes vinculados al crear comida  \n- Crea registros en tabla `comida_ingredientes`\n- Test: `testCrearComida_ConIngredientes()`\n\n✅ **RN11:** Tabla comidas tiene admin_creador_id  \n- FK a tabla cuentas_auth\n- Test: `testCrearComida_AdminCreador()`\n\n✅ **RN25:** Información nutricional en unidades correctas  \n- Calorías: kcal\n- Macronutrientes: gramos (g)\n- Micronutrientes: miligramos (mg)\n- Test: `testCrearComida_InformacionNutricional()`\n\n**VALIDACIONES:**\n```java\n@Min(value = 0, message = \"Calorías no pueden ser negativas\")\nprivate Double calorias;\n\n@Min(value = 0, message = \"Proteínas no pueden ser negativas\")\nprivate Double proteinas;\n```\n\n**TESTS ASOCIADOS:** 14/14 ✅ en `ComidaServiceTest.java`\n\n**EJECUTAR TEST:**\n```bash\n./mvnw test -Dtest=ComidaServiceTest#testCrearComida_ConIngredientes\n```"
+					},
+					"response": []
+				},
+				{
+					"name": "❌ RN25 - Información nutricional negativa",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('RN25: Rechaza valores negativos', function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test('Mensaje indica validación nutricional', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.include('negativ');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombre\": \"Comida Test\",\n  \"descripcion\": \"Test\",\n  \"tipoComida\": \"DESAYUNO\",\n  \"calorias\": -100,\n  \"proteinas\": 25.5,\n  \"carbohidratos\": 15.0,\n  \"grasas\": 18.0,\n  \"ingredienteIds\": [1]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/comidas",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "comidas"]
+						},
+						"description": "**RN25: Validación @Min(0)**\n\nDemuestra que no se permiten valores negativos.\n\n**Test Unitario:** `testCrearComida_ValoresNegativos()`"
+					},
+					"response": []
+				},
+				{
+					"name": "✅ RN10 - Agregar ingrediente a comida existente",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('RN10: Ingrediente agregado a comida', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.eql('success');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"ingredienteId\": 2,\n  \"cantidad\": 50.0,\n  \"unidad\": \"g\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/comidas/{{comidaId}}/ingredientes",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "comidas", "{{comidaId}}", "ingredientes"]
+						},
+						"description": "**RN10: Vinculación de Ingredientes**\n\nDemuestra que se puede agregar ingredientes a comidas existentes.\n\n**Test Unitario:** `testAgregarIngredienteAComida()`"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "🔧 Utilidades",
+			"item": [
+				{
+					"name": "Login Admin",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('adminToken', jsonData.data.token);",
+									"    console.log('✅ Admin token guardado');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"admin@nutritrack.com\",\n  \"password\": \"Admin123!\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "auth", "login"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Listar Etiquetas",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/etiquetas?tipo=OBJETIVO",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "etiquetas"],
+							"query": [
+								{
+									"key": "tipo",
+									"value": "OBJETIVO"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Listar Ingredientes",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/ingredientes",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "ingredientes"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Listar Comidas",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/comidas",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "comidas"]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

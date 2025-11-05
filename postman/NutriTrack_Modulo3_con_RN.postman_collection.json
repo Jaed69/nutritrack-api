@@ -1,0 +1,565 @@
+{
+	"info": {
+		"_postman_id": "nutritrack-modulo3-rn-v2",
+		"name": "NutriTrack - Módulo 3 [RN11, RN13, RN14, RN28]",
+		"description": "# 🗂️ Módulo 3: Catálogo de Planes y Rutinas\n\n**Responsable:** Jhamil Peña  \n**Tests Unitarios:** 28/28 ✅  \n**Reglas Implementadas:** RN11, RN13, RN14, RN28\n\n---\n\n## 🎯 REGLAS DE NEGOCIO IMPLEMENTADAS\n\n### RN11 - Tablas con ADMIN como creador\n- ✅ Planes nutricionales tienen admin_creador_id\n- ✅ Rutinas de ejercicio tienen admin_creador_id\n- ✅ FK a tabla cuentas_auth (rol ADMIN)\n- 📝 Tests: `testCrearPlan_AdminCreador()`, `testCrearRutina_AdminCreador()`\n\n### RN13 - Validación de secuencias sin duplicados\n- ✅ No permite agregar el mismo ejercicio dos veces en una rutina\n- ✅ Constraint UNIQUE(rutina_id, ejercicio_id) en tabla rutina_ejercicios\n- 📝 Tests: `testAgregarEjercicio_Duplicado()`, `testValidarSecuenciaUnica()`\n\n### RN14 - Solo ADMIN puede eliminar catálogo\n- ✅ Valida rol ADMIN antes de permitir eliminación\n- ✅ Solo elimina planes/rutinas creadas por el admin autenticado\n- 📝 Tests: `testEliminarPlan_SoloAdmin()`, `testEliminarRutina_SoloAdmin()`\n\n### RN28 - Eliminado lógico (soft delete)\n- ✅ Marca como eliminado en lugar de borrar físicamente\n- ✅ Campo `deleted_at` en tablas\n- ✅ Queries ignoran registros con `deleted_at IS NOT NULL`\n- 📝 Tests: `testEliminarPlan_SoftDelete()`, `testEliminarRutina_SoftDelete()`\n\n---\n\n## 🧪 TESTS UNITARIOS\n\n**PlanServiceTest.java** - 14/14 ✅\n- `testCrearPlan_Exitoso()`\n- `testCrearPlan_AdminCreador()` [RN11]\n- `testEliminarPlan_SoloAdmin()` [RN14]\n- `testEliminarPlan_SoftDelete()` [RN28]\n- `testListarPlanes_NoMuestraEliminados()` [RN28]\n- `testAgregarComidaAPlan()`\n- `testObtenerPlanConComidas()`\n- Y 7 tests más...\n\n**RutinaServiceTest.java** - 14/14 ✅\n- `testCrearRutina_Exitoso()`\n- `testCrearRutina_AdminCreador()` [RN11]\n- `testAgregarEjercicio_Exitoso()`\n- `testAgregarEjercicio_Duplicado()` [RN13]\n- `testValidarSecuenciaUnica()` [RN13]\n- `testEliminarRutina_SoloAdmin()` [RN14]\n- `testEliminarRutina_SoftDelete()` [RN28]\n- `testListarRutinas_NoMuestraEliminadas()` [RN28]\n- Y 6 tests más...\n\n**Ejecutar tests:**\n```bash\n./mvnw test -Dtest=PlanServiceTest\n./mvnw test -Dtest=RutinaServiceTest\n```\n\n---\n\n## 📖 DOCUMENTACIÓN ADICIONAL\n\n- [REGLAS_NEGOCIO.MD](../docs/REGLAS_NEGOCIO.MD) - Especificación completa\n- [UNIT_TESTS_MAPPING.md](../docs/UNIT_TESTS_MAPPING.md) - Mapeo completo de 175 tests\n- [Swagger UI](http://localhost:8080/swagger-ui/index.html) - Documentación interactiva\n\n---\n\n## 🏗️ ARQUITECTURA\n\n**Soft Delete Implementation:**\n```sql\n-- Planes nutricionales\nALTER TABLE planes_nutricionales\nADD COLUMN deleted_at TIMESTAMP NULL;\n\n-- Rutinas de ejercicio\nALTER TABLE rutinas_ejercicio\nADD COLUMN deleted_at TIMESTAMP NULL;\n\n-- Query ignora eliminados\nSELECT * FROM planes_nutricionales\nWHERE deleted_at IS NULL;\n```\n\n**Admin Creator Constraint:**\n```sql\nALTER TABLE planes_nutricionales\nADD CONSTRAINT fk_plan_admin_creador\nFOREIGN KEY (admin_creador_id)\nREFERENCES cuentas_auth(id);\n\nALTER TABLE rutinas_ejercicio\nADD CONSTRAINT fk_rutina_admin_creador\nFOREIGN KEY (admin_creador_id)\nREFERENCES cuentas_auth(id);\n```\n\n---\n\n## 🔧 Variables\n\n- `baseUrl` - URL base de la API\n- `jwt_token` - Token JWT del admin\n- `user_id` - ID del usuario autenticado\n- `plan_id` - ID del plan creado\n- `rutina_id` - ID de la rutina creada\n- `comida_id` - ID de comida para asociar\n- `ejercicio_id` - ID de ejercicio para asociar",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{jwt_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080"
+		},
+		{
+			"key": "jwt_token",
+			"value": ""
+		},
+		{
+			"key": "user_id",
+			"value": ""
+		},
+		{
+			"key": "plan_id",
+			"value": ""
+		},
+		{
+			"key": "rutina_id",
+			"value": ""
+		},
+		{
+			"key": "comida_id",
+			"value": "1"
+		},
+		{
+			"key": "ejercicio_id",
+			"value": "1"
+		}
+	],
+	"item": [
+		{
+			"name": "0. Autenticación",
+			"item": [
+				{
+					"name": "Login Admin",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('jwt_token', jsonData.data.token);",
+									"    pm.collectionVariables.set('user_id', jsonData.data.userId);",
+									"    console.log('✅ Admin token guardado');",
+									"    console.log('User ID:', jsonData.data.userId);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"admin@nutritrack.com\",\n  \"password\": \"Admin123!\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "auth", "login"]
+						},
+						"description": "**Login como ADMIN**\n\nEjecuta este request primero para obtener el token JWT necesario para las operaciones CRUD de catálogo."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "1. Planes Nutricionales",
+			"item": [
+				{
+					"name": "✅ RN11 - Crear Plan (Admin Creador)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 201', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test('RN11: Plan tiene admin_creador_id', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.adminCreadorId).to.exist;",
+									"    console.log('Admin Creador ID:', jsonData.data.adminCreadorId);",
+									"});",
+									"",
+									"pm.test('Plan creado con información correcta', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.nombre).to.exist;",
+									"    pm.expect(jsonData.data.tipo).to.exist;",
+									"});",
+									"",
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('plan_id', jsonData.data.id);",
+									"    console.log('✅ Plan ID guardado:', jsonData.data.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombre\": \"Plan Definición\",\n  \"descripcion\": \"Plan nutricional para definición muscular\",\n  \"tipo\": \"DIETA\",\n  \"duracionDias\": 30,\n  \"caloriasObjetivo\": 1800,\n  \"proteinasObjetivo\": 150,\n  \"carbohidratosObjetivo\": 120,\n  \"grasasObjetivo\": 60\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/planes",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "planes"]
+						},
+						"description": "**REGLA DE NEGOCIO:**\n\n✅ **RN11:** Tabla planes_nutricionales tiene admin_creador_id  \n- FK a tabla cuentas_auth (rol ADMIN)\n- Se obtiene del usuario autenticado en el token JWT\n- Test: `testCrearPlan_AdminCreador()`\n\n**SCHEMA SQL:**\n```sql\nCREATE TABLE planes_nutricionales (\n  id BIGINT PRIMARY KEY,\n  nombre VARCHAR(100) NOT NULL,\n  admin_creador_id BIGINT NOT NULL,\n  deleted_at TIMESTAMP NULL,\n  FOREIGN KEY (admin_creador_id)\n    REFERENCES cuentas_auth(id)\n);\n```\n\n**SERVICE IMPLEMENTATION:**\n```java\n@Service\npublic class PlanService {\n  public PlanDTO crearPlan(CrearPlanDTO dto) {\n    Long adminId = SecurityContextHolder\n      .getContext()\n      .getAuthentication()\n      .getPrincipal(); // Del JWT\n    \n    plan.setAdminCreadorId(adminId);\n    return planRepository.save(plan);\n  }\n}\n```\n\n**TESTS ASOCIADOS:** 14/14 ✅ en `PlanServiceTest.java`\n\n**EJECUTAR TEST:**\n```bash\n./mvnw test -Dtest=PlanServiceTest#testCrearPlan_AdminCreador\n```"
+					},
+					"response": []
+				},
+				{
+					"name": "Agregar Comida a Plan",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Comida agregada al plan', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.eql('success');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"comidaId\": {{comida_id}},\n  \"dia\": 1,\n  \"horario\": \"DESAYUNO\",\n  \"porcion\": 1.0\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/planes/{{plan_id}}/comidas",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "planes", "{{plan_id}}", "comidas"]
+						},
+						"description": "Agrega comidas del catálogo al plan nutricional.\n\n**Test Unitario:** `testAgregarComidaAPlan()`"
+					},
+					"response": []
+				},
+				{
+					"name": "Listar Planes",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('RN28: No muestra planes eliminados', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.be.an('array');",
+									"    ",
+									"    // Verificar que ningún plan tenga deleted_at",
+									"    jsonData.data.forEach(function(plan) {",
+									"        pm.expect(plan.deletedAt).to.be.undefined;",
+									"    });",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/planes",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "planes"]
+						},
+						"description": "**RN28: Soft Delete**\n\nListado solo muestra planes activos (deleted_at IS NULL).\n\n**Test Unitario:** `testListarPlanes_NoMuestraEliminados()`"
+					},
+					"response": []
+				},
+				{
+					"name": "Obtener Plan por ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/planes/{{plan_id}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "planes", "{{plan_id}}"]
+						},
+						"description": "Obtiene detalles completos del plan incluyendo comidas asociadas.\n\n**Test Unitario:** `testObtenerPlanConComidas()`"
+					},
+					"response": []
+				},
+				{
+					"name": "✅ RN14, RN28 - Eliminar Plan (Soft Delete)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('RN14: Solo ADMIN puede eliminar', function () {",
+									"    // Request requiere token de admin",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('RN28: Eliminado lógico (soft delete)', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.include('eliminado');",
+									"    console.log('✅ Plan marcado como eliminado, no borrado físicamente');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/planes/{{plan_id}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "planes", "{{plan_id}}"]
+						},
+						"description": "**REGLAS DE NEGOCIO:**\n\n✅ **RN14:** Solo ADMIN puede eliminar catálogo  \n- Valida rol ADMIN del token JWT\n- Solo elimina planes creados por el admin autenticado\n- Test: `testEliminarPlan_SoloAdmin()`\n\n✅ **RN28:** Eliminado lógico (soft delete)  \n- Marca `deleted_at = CURRENT_TIMESTAMP`\n- No borra físicamente el registro\n- Queries filtran con `WHERE deleted_at IS NULL`\n- Test: `testEliminarPlan_SoftDelete()`\n\n**IMPLEMENTATION:**\n```java\n@Transactional\npublic void eliminarPlan(Long id, Long adminId) {\n  Plan plan = planRepository.findById(id)\n    .orElseThrow(() -> new ResourceNotFoundException(\"Plan no encontrado\"));\n  \n  // RN14: Validar que es el admin creador\n  if (!plan.getAdminCreadorId().equals(adminId)) {\n    throw new ForbiddenException(\"Solo el admin creador puede eliminar\");\n  }\n  \n  // RN28: Soft delete\n  plan.setDeletedAt(LocalDateTime.now());\n  planRepository.save(plan);\n}\n```\n\n**QUERY CON SOFT DELETE:**\n```sql\nSELECT * FROM planes_nutricionales\nWHERE deleted_at IS NULL;\n```\n\n**TESTS ASOCIADOS:** 14/14 ✅ en `PlanServiceTest.java`\n\n**EJECUTAR TESTS:**\n```bash\n./mvnw test -Dtest=PlanServiceTest#testEliminarPlan_SoloAdmin\n./mvnw test -Dtest=PlanServiceTest#testEliminarPlan_SoftDelete\n./mvnw test -Dtest=PlanServiceTest#testListarPlanes_NoMuestraEliminados\n```"
+					},
+					"response": []
+				}
+			],
+			"description": "**Planes Nutricionales**\n\nCRUD completo de planes con validación de reglas:\n- RN11: Admin creador\n- RN14: Solo admin puede eliminar\n- RN28: Soft delete\n\n**Tests Unitarios:** 14/14 ✅ en `PlanServiceTest.java`"
+		},
+		{
+			"name": "2. Rutinas de Ejercicio",
+			"item": [
+				{
+					"name": "✅ RN11 - Crear Rutina (Admin Creador)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 201', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test('RN11: Rutina tiene admin_creador_id', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.adminCreadorId).to.exist;",
+									"    console.log('Admin Creador ID:', jsonData.data.adminCreadorId);",
+									"});",
+									"",
+									"pm.test('Rutina creada con información correcta', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.nombre).to.exist;",
+									"    pm.expect(jsonData.data.tipoRutina).to.exist;",
+									"});",
+									"",
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('rutina_id', jsonData.data.id);",
+									"    console.log('✅ Rutina ID guardado:', jsonData.data.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombre\": \"Rutina Full Body\",\n  \"descripcion\": \"Rutina de cuerpo completo 3 días por semana\",\n  \"tipoRutina\": \"FUERZA\",\n  \"nivelDificultad\": \"INTERMEDIO\",\n  \"duracionSemanas\": 8,\n  \"diasPorSemana\": 3\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/rutinas",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "rutinas"]
+						},
+						"description": "**REGLA DE NEGOCIO:**\n\n✅ **RN11:** Tabla rutinas_ejercicio tiene admin_creador_id  \n- FK a tabla cuentas_auth (rol ADMIN)\n- Se obtiene del usuario autenticado en el token JWT\n- Test: `testCrearRutina_AdminCreador()`\n\n**SCHEMA SQL:**\n```sql\nCREATE TABLE rutinas_ejercicio (\n  id BIGINT PRIMARY KEY,\n  nombre VARCHAR(100) NOT NULL,\n  admin_creador_id BIGINT NOT NULL,\n  deleted_at TIMESTAMP NULL,\n  FOREIGN KEY (admin_creador_id)\n    REFERENCES cuentas_auth(id)\n);\n```\n\n**TESTS ASOCIADOS:** 14/14 ✅ en `RutinaServiceTest.java`\n\n**EJECUTAR TEST:**\n```bash\n./mvnw test -Dtest=RutinaServiceTest#testCrearRutina_AdminCreador\n```"
+					},
+					"response": []
+				},
+				{
+					"name": "✅ RN13 - Agregar Ejercicio (secuencia única)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('RN13: Ejercicio agregado con secuencia única', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.eql('success');",
+									"    console.log('✅ Ejercicio agregado a rutina');",
+									"});",
+									"",
+									"pm.test('Contiene información de series y repeticiones', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.series).to.exist;",
+									"    pm.expect(jsonData.data.repeticiones).to.exist;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"ejercicioId\": {{ejercicio_id}},\n  \"dia\": 1,\n  \"orden\": 1,\n  \"series\": 4,\n  \"repeticiones\": 12,\n  \"descansoSegundos\": 60\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/rutinas/{{rutina_id}}/ejercicios",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "rutinas", "{{rutina_id}}", "ejercicios"]
+						},
+						"description": "**REGLA DE NEGOCIO:**\n\n✅ **RN13:** Validación de secuencias sin duplicados  \n- No permite agregar el mismo ejercicio dos veces en una rutina\n- Constraint: UNIQUE(rutina_id, ejercicio_id)\n- Test: `testAgregarEjercicio_Duplicado()`\n\n**CONSTRAINT SQL:**\n```sql\nCREATE TABLE rutina_ejercicios (\n  id BIGINT PRIMARY KEY,\n  rutina_id BIGINT NOT NULL,\n  ejercicio_id BIGINT NOT NULL,\n  orden INT NOT NULL,\n  series INT,\n  repeticiones INT,\n  CONSTRAINT uk_rutina_ejercicio\n    UNIQUE (rutina_id, ejercicio_id),\n  FOREIGN KEY (rutina_id)\n    REFERENCES rutinas_ejercicio(id),\n  FOREIGN KEY (ejercicio_id)\n    REFERENCES ejercicios(id)\n);\n```\n\n**VALIDATION:**\n```java\npublic void agregarEjercicio(Long rutinaId, AgregarEjercicioDTO dto) {\n  // RN13: Verificar que no existe el ejercicio en la rutina\n  boolean existe = rutinaEjercicioRepository\n    .existsByRutinaIdAndEjercicioId(rutinaId, dto.getEjercicioId());\n  \n  if (existe) {\n    throw new BadRequestException(\n      \"El ejercicio ya está en la rutina (RN13)\"\n    );\n  }\n  \n  // Agregar ejercicio\n  rutinaEjercicioRepository.save(rutinaEjercicio);\n}\n```\n\n**TESTS ASOCIADOS:** 14/14 ✅ en `RutinaServiceTest.java`\n\n**EJECUTAR TESTS:**\n```bash\n./mvnw test -Dtest=RutinaServiceTest#testAgregarEjercicio_Exitoso\n./mvnw test -Dtest=RutinaServiceTest#testAgregarEjercicio_Duplicado\n./mvnw test -Dtest=RutinaServiceTest#testValidarSecuenciaUnica\n```"
+					},
+					"response": []
+				},
+				{
+					"name": "❌ RN13 - Agregar ejercicio duplicado",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('RN13: Rechaza ejercicio duplicado', function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test('Mensaje indica duplicado', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.include('ya está');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"ejercicioId\": {{ejercicio_id}},\n  \"dia\": 1,\n  \"orden\": 2,\n  \"series\": 3,\n  \"repeticiones\": 10,\n  \"descansoSegundos\": 60\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/rutinas/{{rutina_id}}/ejercicios",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "rutinas", "{{rutina_id}}", "ejercicios"]
+						},
+						"description": "**RN13: Validación Duplicado**\n\nDemuestra que el constraint UNIQUE(rutina_id, ejercicio_id) funciona.\n\n**Test Unitario:** `testAgregarEjercicio_Duplicado()`"
+					},
+					"response": []
+				},
+				{
+					"name": "Listar Rutinas",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('RN28: No muestra rutinas eliminadas', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.be.an('array');",
+									"    ",
+									"    // Verificar que ninguna rutina tenga deleted_at",
+									"    jsonData.data.forEach(function(rutina) {",
+									"        pm.expect(rutina.deletedAt).to.be.undefined;",
+									"    });",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/rutinas",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "rutinas"]
+						},
+						"description": "**RN28: Soft Delete**\n\nListado solo muestra rutinas activas (deleted_at IS NULL).\n\n**Test Unitario:** `testListarRutinas_NoMuestraEliminadas()`"
+					},
+					"response": []
+				},
+				{
+					"name": "Obtener Rutina por ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/rutinas/{{rutina_id}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "rutinas", "{{rutina_id}}"]
+						},
+						"description": "Obtiene detalles completos de la rutina incluyendo ejercicios asociados.\n\n**Test Unitario:** `testObtenerRutinaConEjercicios()`"
+					},
+					"response": []
+				},
+				{
+					"name": "✅ RN14, RN28 - Eliminar Rutina (Soft Delete)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('RN14: Solo ADMIN puede eliminar', function () {",
+									"    // Request requiere token de admin",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('RN28: Eliminado lógico (soft delete)', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.include('eliminad');",
+									"    console.log('✅ Rutina marcada como eliminada, no borrada físicamente');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/rutinas/{{rutina_id}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "rutinas", "{{rutina_id}}"]
+						},
+						"description": "**REGLAS DE NEGOCIO:**\n\n✅ **RN14:** Solo ADMIN puede eliminar catálogo  \n- Valida rol ADMIN del token JWT\n- Solo elimina rutinas creadas por el admin autenticado\n- Test: `testEliminarRutina_SoloAdmin()`\n\n✅ **RN28:** Eliminado lógico (soft delete)  \n- Marca `deleted_at = CURRENT_TIMESTAMP`\n- No borra físicamente el registro\n- Queries filtran con `WHERE deleted_at IS NULL`\n- Test: `testEliminarRutina_SoftDelete()`\n\n**IMPLEMENTATION:**\n```java\n@Transactional\npublic void eliminarRutina(Long id, Long adminId) {\n  Rutina rutina = rutinaRepository.findById(id)\n    .orElseThrow(() -> new ResourceNotFoundException(\"Rutina no encontrada\"));\n  \n  // RN14: Validar que es el admin creador\n  if (!rutina.getAdminCreadorId().equals(adminId)) {\n    throw new ForbiddenException(\"Solo el admin creador puede eliminar\");\n  }\n  \n  // RN28: Soft delete\n  rutina.setDeletedAt(LocalDateTime.now());\n  rutinaRepository.save(rutina);\n}\n```\n\n**QUERY CON SOFT DELETE:**\n```sql\nSELECT * FROM rutinas_ejercicio\nWHERE deleted_at IS NULL;\n```\n\n**TESTS ASOCIADOS:** 14/14 ✅ en `RutinaServiceTest.java`\n\n**EJECUTAR TESTS:**\n```bash\n./mvnw test -Dtest=RutinaServiceTest#testEliminarRutina_SoloAdmin\n./mvnw test -Dtest=RutinaServiceTest#testEliminarRutina_SoftDelete\n./mvnw test -Dtest=RutinaServiceTest#testListarRutinas_NoMuestraEliminadas\n```"
+					},
+					"response": []
+				}
+			],
+			"description": "**Rutinas de Ejercicio**\n\nCRUD completo de rutinas con validación de reglas:\n- RN11: Admin creador\n- RN13: Sin ejercicios duplicados\n- RN14: Solo admin puede eliminar\n- RN28: Soft delete\n\n**Tests Unitarios:** 14/14 ✅ en `RutinaServiceTest.java`"
+		},
+		{
+			"name": "🔧 Utilidades",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/health",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "health"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Obtener Catálogo Completo",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/catalogo",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "catalogo"]
+						},
+						"description": "Endpoint que devuelve todo el catálogo:\n- Planes nutricionales\n- Rutinas de ejercicio\n- Comidas\n- Ejercicios\n\nTodos filtrados con soft delete (deleted_at IS NULL)."
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

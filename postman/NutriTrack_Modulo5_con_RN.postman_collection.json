@@ -1,0 +1,635 @@
+{
+	"info": {
+		"_postman_id": "nutritrack-modulo5-rn-v2",
+		"name": "NutriTrack - Módulo 5 [RN20, RN21, RN22, RN23]",
+		"description": "# 📊 Módulo 5: Tracking y Seguimiento de Progreso\n\n**Tests Unitarios:** 40/40 ✅  \n**Reglas Implementadas:** RN20, RN21, RN22, RN23\n\n---\n\n## 🎯 REGLAS DE NEGOCIO IMPLEMENTADAS\n\n### RN20 - Visualización de actividades según estado del plan/rutina\n- ✅ Solo muestra actividades si hay plan/rutina ACTIVO\n- ✅ Si está PAUSADO, muestra mensaje apropiado\n- ✅ Si está CANCELADO/COMPLETADO, no muestra nada\n- 📝 Tests: `testObtenerActividadesHoy_SinPlanActivo()`, `testObtenerActividadesHoy_PlanPausado()`\n\n### RN21 - Registro de actividad solo si está programada\n- ✅ Solo permite registrar comidas/ejercicios que estén en el plan/rutina activo\n- ✅ Valida que la fecha corresponda al día correcto del plan\n- ✅ Valida que el horario sea correcto (desayuno, almuerzo, cena)\n- 📝 Tests: `testRegistrarComida_NoProgramada()`, `testRegistrarEjercicio_NoProgramado()`\n\n### RN22 - Validación de mediciones en rango\n- ✅ Ya implementada en Módulo 1 (Perfil)\n- ✅ También aplica a registros de progreso diario\n- ✅ Peso: 20-300 kg\n- ✅ Altura: 50-250 cm\n- 📝 Tests: `testRegistrarMedicion_PesoFueraDeRango()`, `testRegistrarMedicion_AlturaFueraDeRango()`\n\n### RN23 - Gráficas requieren mínimo 2 registros\n- ✅ No genera gráfica de progreso con menos de 2 puntos de datos\n- ✅ Retorna mensaje apropiado si no hay suficientes datos\n- 📝 Tests: `testObtenerGraficaPeso_SinDatosSuficientes()`, `testObtenerGraficaPeso_ConDatos()`\n\n---\n\n## 🧪 TESTS UNITARIOS\n\n**RegistroComidaServiceTest.java** - 12/12 ✅\n- `testRegistrarComida_Exitoso()` [RN21]\n- `testRegistrarComida_NoProgramada()` [RN21]\n- `testRegistrarComida_SinPlanActivo()` [RN20]\n- `testRegistrarComida_PlanPausado()` [RN20]\n- `testRegistrarComida_FueraDelDia()` [RN21]\n- `testEliminarRegistroComida()`\n- Y 6 tests más...\n\n**RegistroEjercicioServiceTest.java** - 10/10 ✅\n- `testRegistrarEjercicio_Exitoso()` [RN21]\n- `testRegistrarEjercicio_NoProgramado()` [RN21]\n- `testRegistrarEjercicio_SinRutinaActiva()` [RN20]\n- `testRegistrarEjercicio_RutinaPausada()` [RN20]\n- `testEliminarRegistroEjercicio()`\n- Y 5 tests más...\n\n**RegistroProgresoServiceTest.java** - 18/18 ✅\n- `testObtenerActividadesHoy_ConPlanActivo()` [RN20]\n- `testObtenerActividadesHoy_SinPlanActivo()` [RN20]\n- `testObtenerActividadesHoy_PlanPausado()` [RN20]\n- `testRegistrarMedicion_PesoFueraDeRango()` [RN22]\n- `testRegistrarMedicion_AlturaFueraDeRango()` [RN22]\n- `testObtenerGraficaPeso_SinDatosSuficientes()` [RN23]\n- `testObtenerGraficaPeso_ConDatos()` [RN23]\n- `testObtenerGraficaCalorias()` [RN23]\n- Y 10 tests más...\n\n**Ejecutar tests:**\n```bash\n./mvnw test -Dtest=RegistroComidaServiceTest\n./mvnw test -Dtest=RegistroEjercicioServiceTest\n./mvnw test -Dtest=RegistroProgresoServiceTest\n```\n\n---\n\n## 📖 DOCUMENTACIÓN ADICIONAL\n\n- [REGLAS_NEGOCIO.MD](../docs/REGLAS_NEGOCIO.MD) - Especificación completa\n- [UNIT_TESTS_MAPPING.md](../docs/UNIT_TESTS_MAPPING.md) - Mapeo completo de 175 tests\n- [Swagger UI](http://localhost:8080/swagger-ui/index.html) - Documentación interactiva\n\n---\n\n## 🏗️ ARQUITECTURA\n\n**RN20: Validación de estado ACTIVO**\n```java\npublic ActividadesHoyDTO obtenerActividadesHoy(Long usuarioId) {\n  // RN20: Solo mostrar si hay plan ACTIVO\n  Optional<UsuarioPlan> planActivo = usuarioPlanRepository\n    .findByUsuarioIdAndEstado(usuarioId, EstadoPlan.ACTIVO);\n  \n  if (planActivo.isEmpty()) {\n    throw new BadRequestException(\n      \"No tienes un plan activo. Activa un plan para ver las actividades del día. (RN20)\"\n    );\n  }\n  \n  if (planActivo.get().getEstado() == EstadoPlan.PAUSADO) {\n    throw new BadRequestException(\n      \"Tu plan está pausado. Reanúdalo para continuar. (RN20)\"\n    );\n  }\n  \n  // Obtener actividades del día\n  return obtenerActividadesDelDia(planActivo.get(), LocalDate.now());\n}\n```\n\n**RN21: Validación de actividad programada**\n```java\npublic RegistroComidaDTO registrarComida(\n  RegistrarComidaDTO dto,\n  Long usuarioId\n) {\n  // RN21: Verificar que comida esté en el plan activo\n  boolean estaProgramada = planComidaRepository\n    .existsByUsuarioPlanIdAndComidaIdAndDiaAndHorario(\n      usuarioPlan.getId(),\n      dto.getComidaId(),\n      diaDelPlan,\n      dto.getHorario()\n    );\n  \n  if (!estaProgramada) {\n    throw new BadRequestException(\n      \"Comida no programada para este día/horario. (RN21)\"\n    );\n  }\n  \n  // Registrar comida\n  return registroComidaRepository.save(registro);\n}\n```\n\n**RN23: Validación mínimo 2 registros**\n```java\npublic GraficaProgresoDTO obtenerGraficaPeso(\n  Long usuarioId,\n  LocalDate desde,\n  LocalDate hasta\n) {\n  List<MedicionDTO> mediciones = medicionRepository\n    .findByUsuarioIdAndFechaBetween(usuarioId, desde, hasta);\n  \n  // RN23: Mínimo 2 registros para gráfica\n  if (mediciones.size() < 2) {\n    throw new BadRequestException(\n      \"Se requieren al menos 2 registros para generar una gráfica. (RN23)\"\n    );\n  }\n  \n  return generarGrafica(mediciones);\n}\n```\n\n---\n\n## 🔧 Variables\n\n- `base_url` - URL base de la API\n- `access_token` - Token JWT del usuario\n- `plan_comida_id` - ID de comida programada\n- `rutina_ejercicio_id` - ID de ejercicio programado\n- `registro_comida_id` - ID del registro creado\n- `registro_ejercicio_id` - ID del registro creado",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{access_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080"
+		},
+		{
+			"key": "access_token",
+			"value": ""
+		},
+		{
+			"key": "plan_comida_id",
+			"value": ""
+		},
+		{
+			"key": "rutina_ejercicio_id",
+			"value": ""
+		},
+		{
+			"key": "registro_comida_id",
+			"value": ""
+		},
+		{
+			"key": "registro_ejercicio_id",
+			"value": ""
+		}
+	],
+	"item": [
+		{
+			"name": "0. Autenticación",
+			"item": [
+				{
+					"name": "Login Usuario",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('access_token', jsonData.data.token);",
+									"    console.log('✅ Token guardado');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"demo@nutritrack.com\",\n  \"password\": \"Demo123!\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/login",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "login"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "RN20 - Ver actividades del día",
+			"item": [
+				{
+					"name": "✅ RN20 - Ver actividades plan HOY (con plan activo)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('RN20: Muestra actividades porque plan está ACTIVO', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.estadoPlan).to.eql('ACTIVO');",
+									"    pm.expect(jsonData.data.comidas).to.be.an('array');",
+									"});",
+									"",
+									"pm.test('Incluye información de calorías objetivo vs consumidas', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.caloriasObjetivo).to.exist;",
+									"    pm.expect(jsonData.data.caloriasConsumidas).to.exist;",
+									"});",
+									"",
+									"pm.test('Cada comida tiene estado de registro', function () {",
+									"    var jsonData = pm.response.json();",
+									"    jsonData.data.comidas.forEach(function(comida) {",
+									"        pm.expect(comida.registrada).to.be.a('boolean');",
+									"        if (comida.registrada) {",
+									"            pm.expect(comida.registroId).to.exist;",
+									"        }",
+									"    });",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/usuario/registros/plan/hoy",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "usuario", "registros", "plan", "hoy"]
+						},
+						"description": "**REGLA DE NEGOCIO:**\n\n✅ **RN20:** Visualización de actividades según estado del plan  \n- Solo muestra actividades si hay plan ACTIVO\n- Si PAUSADO, muestra mensaje apropiado\n- Si CANCELADO/COMPLETADO, no muestra nada\n- Test: `testObtenerActividadesHoy_ConPlanActivo()`\n\n**IMPLEMENTATION:**\n```java\n@GetMapping(\"/plan/hoy\")\npublic ResponseEntity<ActividadesHoyDTO> obtenerActividadesPlanHoy() {\n  Long usuarioId = SecurityContextHolder.getUserId();\n  \n  // RN20: Verificar estado del plan\n  Optional<UsuarioPlan> planActivo = usuarioPlanRepository\n    .findByUsuarioIdAndEstado(usuarioId, EstadoPlan.ACTIVO);\n  \n  if (planActivo.isEmpty()) {\n    throw new BadRequestException(\n      \"No tienes un plan activo. Activa un plan para ver las actividades. (RN20)\"\n    );\n  }\n  \n  if (planActivo.get().getEstado() == EstadoPlan.PAUSADO) {\n    throw new BadRequestException(\n      \"Tu plan está pausado. Reanúdalo para continuar. (RN20)\"\n    );\n  }\n  \n  // Obtener actividades del día\n  ActividadesHoyDTO actividades = obtenerActividadesDelDia(\n    planActivo.get(),\n    LocalDate.now()\n  );\n  \n  return ResponseEntity.ok(actividades);\n}\n```\n\n**RESPONSE:**\n```json\n{\n  \"data\": {\n    \"fecha\": \"2025-11-05\",\n    \"diaDelPlan\": 3,\n    \"estadoPlan\": \"ACTIVO\",\n    \"caloriasObjetivo\": 2000,\n    \"caloriasConsumidas\": 850,\n    \"comidas\": [\n      {\n        \"id\": 1,\n        \"nombre\": \"Avena con frutas\",\n        \"horario\": \"DESAYUNO\",\n        \"calorias\": 350,\n        \"registrada\": true,\n        \"registroId\": 123,\n        \"horaRegistro\": \"08:30\"\n      },\n      {\n        \"id\": 2,\n        \"nombre\": \"Ensalada César\",\n        \"horario\": \"ALMUERZO\",\n        \"calorias\": 500,\n        \"registrada\": false\n      }\n    ]\n  }\n}\n```\n\n**TESTS ASOCIADOS:** 18/18 ✅ en `RegistroProgresoServiceTest.java`\n\n**EJECUTAR TEST:**\n```bash\n./mvnw test -Dtest=RegistroProgresoServiceTest#testObtenerActividadesHoy_ConPlanActivo\n```"
+					},
+					"response": []
+				},
+				{
+					"name": "❌ RN20 - Sin plan activo",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('RN20: Rechaza consulta sin plan activo', function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test('Mensaje indica que necesita plan activo', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.include('plan activo');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/usuario/registros/plan/hoy",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "usuario", "registros", "plan", "hoy"]
+						},
+						"description": "**RN20: Sin Plan Activo**\n\nDemuestra que no se pueden ver actividades sin plan activo.\n\n**Test Unitario:** `testObtenerActividadesHoy_SinPlanActivo()`"
+					},
+					"response": []
+				},
+				{
+					"name": "❌ RN20 - Plan pausado",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('RN20: Mensaje apropiado para plan pausado', function () {",
+									"    pm.response.to.have.status(400);",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.include('pausado');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/usuario/registros/plan/hoy",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "usuario", "registros", "plan", "hoy"]
+						},
+						"description": "**Test Unitario:** `testObtenerActividadesHoy_PlanPausado()`"
+					},
+					"response": []
+				},
+				{
+					"name": "✅ RN20 - Ver ejercicios rutina HOY",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('RN20: Muestra ejercicios porque rutina está ACTIVA', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.estadoRutina).to.eql('ACTIVO');",
+									"    pm.expect(jsonData.data.ejercicios).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/usuario/registros/rutina/hoy",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "usuario", "registros", "rutina", "hoy"]
+						},
+						"description": "**RN20:** Mismo comportamiento para rutinas"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "RN21 - Registrar actividad programada",
+			"item": [
+				{
+					"name": "✅ RN21 - Registrar comida programada",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 201', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test('RN21: Comida registrada porque está programada', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.id).to.exist;",
+									"    pm.expect(jsonData.data.comidaId).to.exist;",
+									"    pm.expect(jsonData.data.fecha).to.exist;",
+									"});",
+									"",
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('registro_comida_id', jsonData.data.id);",
+									"    console.log('✅ Registro comida ID:', jsonData.data.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"comidaId\": 1,\n  \"fecha\": \"2025-11-05\",\n  \"horario\": \"DESAYUNO\",\n  \"porcionConsumida\": 1.0,\n  \"notas\": \"Desayuno saludable\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/usuario/registros/comidas",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "usuario", "registros", "comidas"]
+						},
+						"description": "**REGLA DE NEGOCIO:**\n\n✅ **RN21:** Registro de actividad solo si está programada  \n- Solo registra comidas que estén en el plan activo\n- Valida día correcto del plan\n- Valida horario (DESAYUNO, ALMUERZO, CENA, SNACK)\n- Test: `testRegistrarComida_Exitoso()`\n\n**VALIDACIÓN:**\n```java\n@Transactional\npublic RegistroComidaDTO registrarComida(\n  RegistrarComidaDTO dto,\n  Long usuarioId\n) {\n  // RN20: Verificar plan activo\n  UsuarioPlan usuarioPlan = obtenerPlanActivo(usuarioId);\n  \n  // RN21: Verificar que comida está programada\n  int diaDelPlan = calcularDiaDelPlan(\n    usuarioPlan.getFechaInicio(),\n    dto.getFecha()\n  );\n  \n  boolean estaProgramada = planComidaRepository\n    .existsByUsuarioPlanIdAndComidaIdAndDiaAndHorario(\n      usuarioPlan.getId(),\n      dto.getComidaId(),\n      diaDelPlan,\n      dto.getHorario()\n    );\n  \n  if (!estaProgramada) {\n    throw new BadRequestException(\n      \"Comida no programada para este día/horario. (RN21)\"\n    );\n  }\n  \n  // Registrar comida\n  RegistroComida registro = new RegistroComida();\n  registro.setUsuarioPlanId(usuarioPlan.getId());\n  registro.setComidaId(dto.getComidaId());\n  registro.setFecha(dto.getFecha());\n  registro.setHorario(dto.getHorario());\n  registro.setPorcionConsumida(dto.getPorcionConsumida());\n  \n  return registroComidaRepository.save(registro);\n}\n```\n\n**TESTS ASOCIADOS:** 12/12 ✅ en `RegistroComidaServiceTest.java`\n\n**EJECUTAR TEST:**\n```bash\n./mvnw test -Dtest=RegistroComidaServiceTest#testRegistrarComida_Exitoso\n```"
+					},
+					"response": []
+				},
+				{
+					"name": "❌ RN21 - Comida no programada",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('RN21: Rechaza comida no programada', function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test('Mensaje indica que no está programada', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.include('programada');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"comidaId\": 999,\n  \"fecha\": \"2025-11-05\",\n  \"horario\": \"CENA\",\n  \"porcionConsumida\": 1.0\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/usuario/registros/comidas",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "usuario", "registros", "comidas"]
+						},
+						"description": "**RN21: Validación de Programación**\n\nDemuestra que no se puede registrar comida que no esté en el plan.\n\n**Test Unitario:** `testRegistrarComida_NoProgramada()`"
+					},
+					"response": []
+				},
+				{
+					"name": "✅ RN21 - Registrar ejercicio programado",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 201', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test('RN21: Ejercicio registrado porque está programado', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.id).to.exist;",
+									"});",
+									"",
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('registro_ejercicio_id', jsonData.data.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"ejercicioId\": 1,\n  \"fecha\": \"2025-11-05\",\n  \"seriesRealizadas\": 4,\n  \"repeticionesRealizadas\": 12,\n  \"pesoUtilizado\": 50.0,\n  \"notas\": \"Buena sesión\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/usuario/registros/ejercicios",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "usuario", "registros", "ejercicios"]
+						},
+						"description": "**RN21:** Validación para ejercicios (similar a comidas)\n\n**Test Unitario:** `testRegistrarEjercicio_Exitoso()`"
+					},
+					"response": []
+				},
+				{
+					"name": "Desmarcar comida (eliminar registro)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/usuario/registros/comidas/{{registro_comida_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "usuario", "registros", "comidas", "{{registro_comida_id}}"]
+						},
+						"description": "**US-23:** Desmarcar actividades\n\n**Test Unitario:** `testEliminarRegistroComida()`"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "RN22 - Validación mediciones (ya en Módulo 1)",
+			"item": [
+				{
+					"name": "✅ RN22 - Registrar medición válida",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('RN22: Medición en rango válido (20-300 kg)', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.peso).to.be.within(20, 300);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"peso\": 75.5,\n  \"altura\": 175.0,\n  \"fecha\": \"2025-11-05\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/perfil/mediciones",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "perfil", "mediciones"]
+						},
+						"description": "**RN22:** Validación de mediciones (ya implementada en Módulo 1)\n\n**Test Unitario:** `testRegistrarMedicion_PesoFueraDeRango()`"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "RN23 - Gráficas con mínimo 2 registros",
+			"item": [
+				{
+					"name": "✅ RN23 - Gráfica de peso (con datos suficientes)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('RN23: Gráfica generada con >= 2 registros', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.puntos).to.be.an('array');",
+									"    pm.expect(jsonData.data.puntos.length).to.be.at.least(2);",
+									"});",
+									"",
+									"pm.test('Incluye estadísticas de progreso', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.pesoInicial).to.exist;",
+									"    pm.expect(jsonData.data.pesoActual).to.exist;",
+									"    pm.expect(jsonData.data.cambioTotal).to.exist;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/usuario/progreso/peso?desde=2025-10-01&hasta=2025-11-05",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "usuario", "progreso", "peso"],
+							"query": [
+								{
+									"key": "desde",
+									"value": "2025-10-01"
+								},
+								{
+									"key": "hasta",
+									"value": "2025-11-05"
+								}
+							]
+						},
+						"description": "**REGLA DE NEGOCIO:**\n\n✅ **RN23:** Gráficas requieren mínimo 2 registros  \n- No genera gráfica con menos de 2 puntos\n- Retorna mensaje apropiado si no hay datos suficientes\n- Test: `testObtenerGraficaPeso_ConDatos()`\n\n**IMPLEMENTATION:**\n```java\n@GetMapping(\"/peso\")\npublic ResponseEntity<GraficaProgresoDTO> obtenerGraficaPeso(\n  @RequestParam LocalDate desde,\n  @RequestParam LocalDate hasta\n) {\n  Long usuarioId = SecurityContextHolder.getUserId();\n  \n  // Obtener mediciones del rango\n  List<MedicionDTO> mediciones = medicionRepository\n    .findByUsuarioIdAndFechaBetween(usuarioId, desde, hasta);\n  \n  // RN23: Validar mínimo 2 registros\n  if (mediciones.size() < 2) {\n    throw new BadRequestException(\n      \"Se requieren al menos 2 registros para generar una gráfica. \" +\n      \"Tienes: \" + mediciones.size() + \" (RN23)\"\n    );\n  }\n  \n  // Generar gráfica\n  GraficaProgresoDTO grafica = new GraficaProgresoDTO();\n  grafica.setPuntos(mediciones);\n  grafica.setPesoInicial(mediciones.get(0).getPeso());\n  grafica.setPesoActual(mediciones.get(mediciones.size() - 1).getPeso());\n  grafica.setCambioTotal(\n    grafica.getPesoActual() - grafica.getPesoInicial()\n  );\n  \n  return ResponseEntity.ok(grafica);\n}\n```\n\n**RESPONSE:**\n```json\n{\n  \"data\": {\n    \"puntos\": [\n      {\"fecha\": \"2025-10-01\", \"peso\": 80.0},\n      {\"fecha\": \"2025-10-08\", \"peso\": 79.2},\n      {\"fecha\": \"2025-10-15\", \"peso\": 78.5},\n      {\"fecha\": \"2025-10-22\", \"peso\": 77.8},\n      {\"fecha\": \"2025-11-05\", \"peso\": 77.0}\n    ],\n    \"pesoInicial\": 80.0,\n    \"pesoActual\": 77.0,\n    \"cambioTotal\": -3.0,\n    \"promedioPerdidaSemanal\": 0.75\n  }\n}\n```\n\n**TESTS ASOCIADOS:** 18/18 ✅ en `RegistroProgresoServiceTest.java`\n\n**EJECUTAR TESTS:**\n```bash\n./mvnw test -Dtest=RegistroProgresoServiceTest#testObtenerGraficaPeso_ConDatos\n./mvnw test -Dtest=RegistroProgresoServiceTest#testObtenerGraficaPeso_SinDatosSuficientes\n```"
+					},
+					"response": []
+				},
+				{
+					"name": "❌ RN23 - Gráfica sin datos suficientes",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('RN23: Rechaza gráfica con < 2 registros', function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test('Mensaje indica mínimo requerido', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.include('2 registros');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/usuario/progreso/peso?desde=2025-11-01&hasta=2025-11-02",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "usuario", "progreso", "peso"],
+							"query": [
+								{
+									"key": "desde",
+									"value": "2025-11-01"
+								},
+								{
+									"key": "hasta",
+									"value": "2025-11-02"
+								}
+							]
+						},
+						"description": "**RN23: Validación Mínimo 2 Registros**\n\nDemuestra que no se genera gráfica con menos de 2 puntos de datos.\n\n**Test Unitario:** `testObtenerGraficaPeso_SinDatosSuficientes()`"
+					},
+					"response": []
+				},
+				{
+					"name": "✅ RN23 - Gráfica de calorías",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('RN23: Gráfica de calorías generada', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.puntos.length).to.be.at.least(2);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/usuario/progreso/calorias?desde=2025-10-01&hasta=2025-11-05",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "usuario", "progreso", "calorias"],
+							"query": [
+								{
+									"key": "desde",
+									"value": "2025-10-01"
+								},
+								{
+									"key": "hasta",
+									"value": "2025-11-05"
+								}
+							]
+						},
+						"description": "**RN23:** Mismo comportamiento para gráficas de calorías\n\n**Test Unitario:** `testObtenerGraficaCalorias()`"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "🔧 Utilidades",
+			"item": [
+				{
+					"name": "Ver resumen semanal",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/usuario/progreso/resumen-semanal",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "usuario", "progreso", "resumen-semanal"]
+						},
+						"description": "Resumen de la última semana:\n- Calorías promedio\n- Días de entrenamiento\n- Adherencia al plan"
+					},
+					"response": []
+				},
+				{
+					"name": "Ver historial completo",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/usuario/historial?page=0&size=20",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "usuario", "historial"],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Historial paginado de todos los registros del usuario"
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
