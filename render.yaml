@@ -1,28 +1,25 @@
 services:
-  # Base de datos PostgreSQL
+  # Base de datos PostgreSQL (Render la creará automáticamente)
   - type: pserv
     name: nutritrack_db
     env: docker
     plan: free
-    # Render creará automáticamente la base de datos PostgreSQL
-    # No necesitas especificar más configuración
+    region: oregon
 
   # API Spring Boot
   - type: web
     name: nutritrack-api
     env: java
     plan: free
+    region: oregon
     buildCommand: ./mvnw clean package -DskipTests
-    startCommand: java -jar target/nutritrack-API-0.0.1-SNAPSHOT.jar
-    healthCheckPath: /actuator/health
+    startCommand: java -Dspring.profiles.active=prod -jar target/nutritrack-API-0.0.1-SNAPSHOT.jar
     envVars:
-      - key: SPRING_PROFILES_ACTIVE
-        value: production
       - key: DATABASE_URL
         fromDatabase:
           name: nutritrack_db
           property: connectionString
       - key: JWT_SECRET
-        generateValue: true
+        value: 4D6351655468576D5A7134743777217A25432A462D4A614E645267556B58703273357638792F423F4528482B4D6251655368566D597133743677397A24432646
       - key: JAVA_TOOL_OPTIONS
         value: -Xmx512m
