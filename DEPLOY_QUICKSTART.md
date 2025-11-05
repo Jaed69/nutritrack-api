@@ -16,7 +16,7 @@ git push origin main
 
 ### 3. Cargar Datos SQL
 Una vez la BD esté lista:
-1. Copia credenciales de PostgreSQL desde Render
+1. Copia credenciales de PostgreSQL desde Render (servicio `nutritrack_db`)
 2. Conéctate con DBeaver/pgAdmin
 3. Ejecuta en orden:
    ```sql

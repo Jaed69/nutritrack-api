@@ -24,7 +24,7 @@ Usa esta lista para verificar cada paso del despliegue.
 ### B. Crear Base de Datos PostgreSQL
 - [ ] Dashboard → **New +** → **PostgreSQL**
 - [ ] Configurar:
-  - [ ] Name: `nutritrack-db`
+  - [ ] Name: `nutritrack_db`
   - [ ] Database: `nutritrack_db`
   - [ ] Region: Oregon (US West) - FREE
   - [ ] Plan: **Free**
@@ -73,7 +73,7 @@ SPRING_PROFILES_ACTIVE=production
 ```
 
 - [ ] Agregar `DATABASE_URL`:
-  - [ ] Ir a `nutritrack-db` service
+  - [ ] Ir a `nutritrack_db` service
   - [ ] Copiar **Internal Database URL**
   - [ ] Pegar en variable `DATABASE_URL`
 

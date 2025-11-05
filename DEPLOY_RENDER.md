@@ -29,7 +29,7 @@ git push origin main
 3. Conecta tu repositorio GitHub `nutritrack-api`
 4. Render detectará automáticamente `render.yaml`
 5. Revisa la configuración:
-   - ✅ **nutritrack-db**: PostgreSQL Free
+   - ✅ **nutritrack_db**: PostgreSQL Free
    - ✅ **nutritrack-api**: Web Service Free
 6. Click en **"Apply"**
 
@@ -80,7 +80,7 @@ Verificaciones:
 
 1. En Render Dashboard → **"New +"** → **"PostgreSQL"**
 2. Configuración:
-   - **Name:** `nutritrack-db`
+   - **Name:** `nutritrack_db`
    - **Database:** `nutritrack_db`
    - **User:** (automático)
    - **Region:** Oregon (US West) - gratis
@@ -168,7 +168,7 @@ JAVA_TOOL_OPTIONS=-Xmx512m
 ```
 
 **Para obtener DATABASE_URL:**
-1. Ve a tu PostgreSQL service (`nutritrack-db`)
+1. Ve a tu PostgreSQL service (`nutritrack_db`)
 2. Copia el **"Internal Database URL"**
 3. Pégalo en `DATABASE_URL`
 
