@@ -7,19 +7,19 @@
 -- INGREDIENTES BÁSICOS
 -- ============================================================================
 
-INSERT INTO ingredientes (nombre, energia, proteinas, carbohidratos, grasas, grupo_alimenticio, categoria_alimento) VALUES
-('Pollo', 165.00, 31.00, 0.00, 3.60, 'PROTEINAS_ANIMALES', 'PROTEINAS'),
-('Arroz integral', 370.00, 7.90, 77.20, 2.90, 'CEREALES', 'CEREALES'),
-('Avena', 389.00, 16.90, 66.30, 6.90, 'CEREALES', 'CEREALES'),
-('Plátano', 89.00, 1.10, 22.80, 0.30, 'FRUTAS', 'FRUTAS'),
-('Almendras', 579.00, 21.20, 21.60, 49.90, 'FRUTOS_SECOS', 'FRUTOS_SECOS'),
-('Yogur', 59.00, 3.50, 4.70, 3.30, 'LACTEOS', 'LACTEOS'),
-('Pescado', 206.00, 22.00, 0.00, 12.00, 'PROTEINAS_ANIMALES', 'PROTEINAS'),
-('Verduras mix', 25.00, 2.00, 5.00, 0.20, 'VERDURAS', 'VERDURAS'),
-('Huevos', 155.00, 13.00, 1.10, 11.00, 'PROTEINAS_ANIMALES', 'PROTEINAS'),
-('Pan integral', 247.00, 13.00, 41.00, 3.50, 'CEREALES', 'CEREALES'),
-('Nueces', 654.00, 15.20, 13.70, 65.20, 'FRUTOS_SECOS', 'FRUTOS_SECOS'),
-('Proteína en polvo', 120.00, 25.00, 3.00, 1.50, 'PROTEINAS_VEGETALES', 'PROTEINAS')
+INSERT INTO ingredientes (nombre, proteinas, carbohidratos, grasas, energia, fibra, categoria_alimento, descripcion) VALUES
+('Pollo', 31.00, 0.00, 3.60, 165.00, 0.00, 'PROTEINAS', 'Pechuga de pollo sin piel, fuente magra de proteína'),
+('Arroz integral', 7.90, 77.20, 2.90, 370.00, 3.50, 'CEREALES', 'Arroz integral cocido, carbohidrato complejo'),
+('Avena', 16.90, 66.30, 6.90, 389.00, 10.60, 'CEREALES', 'Avena en hojuelas, rica en fibra'),
+('Plátano', 1.10, 22.80, 0.30, 89.00, 2.60, 'FRUTAS', 'Plátano maduro, fuente de potasio'),
+('Almendras', 21.20, 21.60, 49.90, 579.00, 12.50, 'FRUTOS_SECOS', 'Almendras naturales, grasas saludables'),
+('Yogur', 3.50, 4.70, 3.30, 59.00, 0.00, 'LACTEOS', 'Yogur griego natural sin azúcar'),
+('Pescado', 22.00, 0.00, 12.00, 206.00, 0.00, 'PROTEINAS', 'Salmón fresco, rico en omega-3'),
+('Verduras mix', 2.00, 5.00, 0.20, 25.00, 2.80, 'VERDURAS', 'Mezcla de verduras frescas variadas'),
+('Huevos', 13.00, 1.10, 11.00, 155.00, 0.00, 'PROTEINAS', 'Huevos enteros frescos'),
+('Pan integral', 13.00, 41.00, 3.50, 247.00, 7.00, 'CEREALES', 'Pan de trigo integral'),
+('Nueces', 15.20, 13.70, 65.20, 654.00, 6.70, 'FRUTOS_SECOS', 'Nueces sin sal, grasas omega-3'),
+('Proteína en polvo', 25.00, 3.00, 1.50, 120.00, 0.00, 'PROTEINAS', 'Proteína whey aislada')
 ON CONFLICT (nombre) DO NOTHING;
 
 -- ============================================================================
@@ -137,22 +137,22 @@ ON CONFLICT DO NOTHING;
 -- EJERCICIOS BÁSICOS
 -- ============================================================================
 
-INSERT INTO ejercicios (nombre, descripcion, tipo_ejercicio, dificultad, grupo_muscular, nivel_dificultad) VALUES
-('Burpees', 'Ejercicio completo de cuerpo que combina sentadilla, plancha y salto', 'CARDIO', 'INTERMEDIO', 'CUERPO_COMPLETO', 'INTERMEDIO'),
-('Mountain Climbers', 'Ejercicio cardiovascular que trabaja core y piernas', 'CARDIO', 'INTERMEDIO', 'CORE', 'INTERMEDIO'),
-('Plancha (Plank)', 'Ejercicio isométrico para fortalecer el core', 'FUERZA', 'PRINCIPIANTE', 'CORE', 'PRINCIPIANTE'),
-('Sentadillas (Squats)', 'Ejercicio fundamental para piernas y glúteos', 'FUERZA', 'PRINCIPIANTE', 'PIERNAS', 'PRINCIPIANTE'),
-('Flexiones de pecho (Push-ups)', 'Ejercicio para pecho, hombros y tríceps', 'FUERZA', 'PRINCIPIANTE', 'PECHO', 'PRINCIPIANTE'),
-('Dominadas (Pull-ups)', 'Ejercicio para espalda y bíceps', 'FUERZA', 'AVANZADO', 'ESPALDA', 'AVANZADO'),
-('Zancadas (Lunges)', 'Ejercicio para piernas y equilibrio', 'FUERZA', 'PRINCIPIANTE', 'PIERNAS', 'PRINCIPIANTE'),
-('Saltos de tijera (Jumping Jacks)', 'Ejercicio cardiovascular básico', 'CARDIO', 'PRINCIPIANTE', 'CARDIO', 'PRINCIPIANTE'),
-('Abdominales (Crunches)', 'Ejercicio para abdomen', 'FUERZA', 'PRINCIPIANTE', 'ABDOMINALES', 'PRINCIPIANTE'),
-('Trote en el lugar (Jogging in Place)', 'Cardio de bajo impacto', 'CARDIO', 'PRINCIPIANTE', 'CARDIO', 'PRINCIPIANTE'),
-('Curl de bíceps con mancuernas', 'Ejercicio de aislamiento para bíceps', 'FUERZA', 'PRINCIPIANTE', 'BICEPS', 'PRINCIPIANTE'),
-('Fondos en banco (Dips)', 'Ejercicio para tríceps y pecho', 'FUERZA', 'INTERMEDIO', 'TRICEPS', 'INTERMEDIO'),
-('Sentadilla con salto (Jump Squats)', 'Ejercicio pliométrico para piernas', 'FUNCIONAL', 'INTERMEDIO', 'PIERNAS', 'INTERMEDIO'),
-('Giros rusos (Russian Twists)', 'Ejercicio para oblicuos', 'FUERZA', 'INTERMEDIO', 'ABDOMINALES', 'INTERMEDIO'),
-('Elevación de piernas', 'Ejercicio para abdomen bajo', 'FUERZA', 'INTERMEDIO', 'ABDOMINALES', 'INTERMEDIO')
+INSERT INTO ejercicios (nombre, descripcion, tipo_ejercicio, grupo_muscular, nivel_dificultad, calorias_quemadas_por_minuto, duracion_estimada_minutos, equipo_necesario) VALUES
+('Burpees', 'Ejercicio completo de cuerpo que combina sentadilla, plancha y salto vertical', 'CARDIO', 'CUERPO_COMPLETO', 'INTERMEDIO', 12.50, 15, 'Ninguno'),
+('Mountain Climbers', 'Ejercicio cardiovascular que trabaja core y piernas en posición de plancha', 'CARDIO', 'CORE', 'INTERMEDIO', 10.00, 10, 'Ninguno'),
+('Plancha (Plank)', 'Ejercicio isométrico para fortalecer el core y estabilidad', 'FUERZA', 'CORE', 'PRINCIPIANTE', 5.00, 5, 'Colchoneta'),
+('Sentadillas (Squats)', 'Ejercicio fundamental para piernas y glúteos, fortalece tren inferior', 'FUERZA', 'PIERNAS', 'PRINCIPIANTE', 8.00, 15, 'Barra y discos (opcional)'),
+('Flexiones de pecho (Push-ups)', 'Ejercicio para pecho, hombros y tríceps usando peso corporal', 'FUERZA', 'PECHO', 'PRINCIPIANTE', 7.00, 10, 'Ninguno'),
+('Dominadas (Pull-ups)', 'Ejercicio para espalda y bíceps colgando de barra', 'FUERZA', 'ESPALDA', 'AVANZADO', 10.00, 10, 'Barra de dominadas'),
+('Zancadas (Lunges)', 'Ejercicio para piernas y equilibrio con paso adelante', 'FUERZA', 'PIERNAS', 'PRINCIPIANTE', 6.00, 12, 'Mancuernas (opcional)'),
+('Saltos de tijera (Jumping Jacks)', 'Ejercicio cardiovascular básico con coordinación', 'CARDIO', 'CARDIO', 'PRINCIPIANTE', 8.00, 10, 'Ninguno'),
+('Abdominales (Crunches)', 'Ejercicio para abdomen superior con flexión de tronco', 'FUERZA', 'ABDOMINALES', 'PRINCIPIANTE', 4.00, 10, 'Colchoneta'),
+('Trote en el lugar (Jogging in Place)', 'Cardio de bajo impacto elevando rodillas', 'CARDIO', 'CARDIO', 'PRINCIPIANTE', 7.00, 20, 'Ninguno'),
+('Curl de bíceps con mancuernas', 'Ejercicio de aislamiento para bíceps con flexión de codo', 'FUERZA', 'BICEPS', 'PRINCIPIANTE', 4.00, 10, 'Mancuernas'),
+('Fondos en banco (Dips)', 'Ejercicio para tríceps y pecho usando banco', 'FUERZA', 'TRICEPS', 'INTERMEDIO', 6.00, 10, 'Banco o silla'),
+('Sentadilla con salto (Jump Squats)', 'Ejercicio pliométrico para piernas con explosividad', 'FUNCIONAL', 'PIERNAS', 'INTERMEDIO', 10.00, 12, 'Ninguno'),
+('Giros rusos (Russian Twists)', 'Ejercicio para oblicuos con rotación de torso', 'FUERZA', 'ABDOMINALES', 'INTERMEDIO', 5.00, 10, 'Disco o mancuerna'),
+('Elevación de piernas', 'Ejercicio para abdomen bajo elevando piernas', 'FUERZA', 'ABDOMINALES', 'INTERMEDIO', 4.50, 10, 'Colchoneta')
 ON CONFLICT (nombre) DO NOTHING;
 
 -- ============================================================================
