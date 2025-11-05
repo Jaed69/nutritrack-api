@@ -31,7 +31,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/admin/rutinas")
 @RequiredArgsConstructor
-@Tag(name = "Módulo 4: Gestor de Catálogo - Rutinas de Ejercicio", 
+@Tag(name = "Módulo 3: Gestor de Catálogo - Rutinas de Ejercicio", 
      description = "Gestión de rutinas de ejercicio (US-11 a US-15) - Jhamil Peña")
 @SecurityRequirement(name = "bearerAuth")
 public class RutinaController {
