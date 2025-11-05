@@ -297,9 +297,32 @@ public class PlanService {
     }
 
     /**
+     * RN16: Verifica si un plan contiene ingredientes alérgenos para el usuario
+     */
+    private boolean contieneAlergenos(Plan plan, java.util.Set<Etiqueta> alergiasUsuario) {
+        if (alergiasUsuario == null || alergiasUsuario.isEmpty()) {
+            return false;
+        }
+
+        // Obtener nombres de alergias del usuario
+        java.util.Set<String> nombresAlergias = alergiasUsuario.stream()
+                .filter(e -> e.getTipoEtiqueta() == Etiqueta.TipoEtiqueta.ALERGIA)
+                .map(Etiqueta::getNombre)
+                .collect(java.util.stream.Collectors.toSet());
+
+        if (nombresAlergias.isEmpty()) {
+            return false;
+        }
+
+        // Verificar si algún ingrediente del plan coincide con las alergias
+        return plan.getEtiquetas().stream()
+                .anyMatch(etiqueta -> nombresAlergias.contains(etiqueta.getNombre()));
+    }
+
+    /**
      * US-16: Ver Catálogo de Planes (CLIENTE)
      * RN15: Sugiere planes según objetivo del perfil de salud
-     * TODO RN16: 🚨CRÍTICO - Implementar filtrado de alérgenos cuando se cree relación usuario_etiquetas_salud
+     * RN16: Filtra planes con alérgenos del usuario
      */
     public Page<PlanResponse> verCatalogo(Long perfilUsuarioId, boolean sugeridos, Pageable pageable) {
         PerfilUsuario perfil = perfilUsuarioRepository.findById(perfilUsuarioId)
@@ -317,13 +340,22 @@ public class PlanService {
             planes = planRepository.findByActivoTrue(pageable);
         }
 
-        // TODO RN16: Agregar filtrado de alérgenos cuando se implemente usuario_etiquetas_salud
+        // RN16: Filtrar planes que contengan alérgenos del usuario
+        java.util.Set<Etiqueta> alergiasUsuario = perfil.getEtiquetasSalud();
+        if (alergiasUsuario != null && !alergiasUsuario.isEmpty()) {
+            java.util.List<Plan> planesFiltrados = planes.getContent().stream()
+                    .filter(plan -> !contieneAlergenos(plan, alergiasUsuario))
+                    .collect(java.util.stream.Collectors.toList());
+            return new org.springframework.data.domain.PageImpl<>(planesFiltrados, pageable, planesFiltrados.size())
+                    .map(PlanResponse::fromEntity);
+        }
+
         return planes.map(PlanResponse::fromEntity);
     }
 
     /**
      * US-17: Ver Detalle del Plan (CLIENTE)
-     * TODO RN16: 🚨CRÍTICO - Implementar validación de alérgenos cuando se cree usuario_etiquetas_salud
+     * RN16: Advierte si el plan contiene alérgenos del usuario
      */
     public PlanResponse verDetallePlan(Long planId, Long perfilUsuarioId) {
         Plan plan = planRepository.findById(planId)
@@ -335,11 +367,15 @@ public class PlanService {
         }
 
         // Verificar que el perfil existe
-        perfilUsuarioRepository.findById(perfilUsuarioId)
+        PerfilUsuario perfil = perfilUsuarioRepository.findById(perfilUsuarioId)
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Perfil de usuario no encontrado con ID: " + perfilUsuarioId));
 
-        // TODO RN16: Agregar validación de alérgenos cuando se implemente usuario_etiquetas_salud
+        // RN16: Validar si el plan contiene alérgenos
+        if (contieneAlergenos(plan, perfil.getEtiquetasSalud())) {
+            throw new com.example.nutritrackapi.exception.BusinessException(
+                    "ADVERTENCIA: Este plan contiene ingredientes que coinciden con tus alergias o restricciones alimentarias. Consulta con un profesional de la salud antes de activarlo.");
+        }
 
         return PlanResponse.fromEntity(plan);
     }

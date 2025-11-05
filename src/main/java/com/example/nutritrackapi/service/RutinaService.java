@@ -302,9 +302,32 @@ public class RutinaService {
     }
 
     /**
+     * RN16: Verifica si una rutina contiene ejercicios con contraindicaciones para el usuario
+     */
+    private boolean contieneContraindicaciones(Rutina rutina, java.util.Set<Etiqueta> condicionesUsuario) {
+        if (condicionesUsuario == null || condicionesUsuario.isEmpty()) {
+            return false;
+        }
+
+        // Obtener condiciones médicas del usuario
+        java.util.Set<String> nombresCondiciones = condicionesUsuario.stream()
+                .filter(e -> e.getTipoEtiqueta() == Etiqueta.TipoEtiqueta.CONDICION_MEDICA)
+                .map(Etiqueta::getNombre)
+                .collect(java.util.stream.Collectors.toSet());
+
+        if (nombresCondiciones.isEmpty()) {
+            return false;
+        }
+
+        // Verificar si algún ejercicio de la rutina tiene contraindicaciones
+        return rutina.getEtiquetas().stream()
+                .anyMatch(etiqueta -> nombresCondiciones.contains(etiqueta.getNombre()));
+    }
+
+    /**
      * US-16: Ver Catálogo de Rutinas (CLIENTE)
      * RN15: Sugiere rutinas según objetivo del perfil de salud
-     * TODO RN16: 🚨CRÍTICO - Implementar filtrado de alérgenos cuando se cree usuario_etiquetas_salud
+     * RN16: Filtra rutinas con contraindicaciones para el usuario
      */
     public Page<RutinaResponse> verCatalogo(Long perfilUsuarioId, boolean sugeridos, Pageable pageable) {
         PerfilUsuario perfil = perfilUsuarioRepository.findById(perfilUsuarioId)
@@ -322,13 +345,22 @@ public class RutinaService {
             rutinas = rutinaRepository.findByActivoTrue(pageable);
         }
 
-        // TODO RN16: Agregar filtrado de alérgenos cuando se implemente usuario_etiquetas_salud
+        // RN16: Filtrar rutinas que contengan contraindicaciones para el usuario
+        java.util.Set<Etiqueta> condicionesUsuario = perfil.getEtiquetasSalud();
+        if (condicionesUsuario != null && !condicionesUsuario.isEmpty()) {
+            java.util.List<Rutina> rutinasFiltradas = rutinas.getContent().stream()
+                    .filter(rutina -> !contieneContraindicaciones(rutina, condicionesUsuario))
+                    .collect(java.util.stream.Collectors.toList());
+            return new org.springframework.data.domain.PageImpl<>(rutinasFiltradas, pageable, rutinasFiltradas.size())
+                    .map(RutinaResponse::fromEntity);
+        }
+
         return rutinas.map(RutinaResponse::fromEntity);
     }
 
     /**
      * US-17: Ver Detalle de Rutina (CLIENTE)
-     * TODO RN16: 🚨CRÍTICO - Implementar validación de alérgenos cuando se cree usuario_etiquetas_salud
+     * RN16: Advierte si la rutina contiene contraindicaciones para el usuario
      */
     public RutinaResponse verDetalleRutina(Long rutinaId, Long perfilUsuarioId) {
         Rutina rutina = rutinaRepository.findById(rutinaId)
@@ -340,11 +372,15 @@ public class RutinaService {
         }
 
         // Verificar que el perfil existe
-        perfilUsuarioRepository.findById(perfilUsuarioId)
+        PerfilUsuario perfil = perfilUsuarioRepository.findById(perfilUsuarioId)
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Perfil de usuario no encontrado con ID: " + perfilUsuarioId));
 
-        // TODO RN16: Agregar validación de alérgenos cuando se implemente usuario_etiquetas_salud
+        // RN16: Validar si la rutina contiene contraindicaciones
+        if (contieneContraindicaciones(rutina, perfil.getEtiquetasSalud())) {
+            throw new com.example.nutritrackapi.exception.BusinessException(
+                    "ADVERTENCIA: Esta rutina contiene ejercicios que pueden estar contraindicados para tus condiciones de salud. Consulta con un profesional antes de activarla.");
+        }
 
         return RutinaResponse.fromEntity(rutina);
     }

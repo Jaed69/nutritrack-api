@@ -46,6 +46,15 @@ public class PerfilUsuario {
     @JsonIgnore
     private UsuarioPerfilSalud perfilSalud;
 
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "usuario_etiquetas_salud",
+        joinColumns = @JoinColumn(name = "id_perfil"),
+        inverseJoinColumns = @JoinColumn(name = "id_etiqueta")
+    )
+    @JsonIgnore
+    private java.util.Set<Etiqueta> etiquetasSalud = new java.util.HashSet<>();
+
     @PrePersist
     protected void onCreate() {
         if (fechaInicioApp == null) {
