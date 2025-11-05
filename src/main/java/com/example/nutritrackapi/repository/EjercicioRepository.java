@@ -47,16 +47,13 @@ public interface EjercicioRepository extends JpaRepository<Ejercicio, Long> {
 
     /**
      * Verifica si un ejercicio está en uso en rutinas (RN09)
-     * Cuando se implemente RutinaEjercicio, descomentar esta query
      */
-    /*
     @Query("""
         SELECT CASE WHEN COUNT(re) > 0 THEN true ELSE false END
         FROM RutinaEjercicio re
         WHERE re.ejercicio.id = :ejercicioId
     """)
     boolean estaEnUsoEnRutinas(@Param("ejercicioId") Long ejercicioId);
-    */
 
     /**
      * Verifica si nombre ya existe

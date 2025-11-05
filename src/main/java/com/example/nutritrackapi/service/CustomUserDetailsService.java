@@ -41,8 +41,9 @@ public class CustomUserDetailsService implements UserDetailsService {
     }
 
     private Collection<? extends GrantedAuthority> getAuthorities(CuentaAuth cuenta) {
+        // El enum TipoRol ya incluye el prefijo ROLE_ (ej: ROLE_ADMIN, ROLE_USER)
         return Collections.singletonList(
-                new SimpleGrantedAuthority("ROLE_" + cuenta.getRole().getTipoRol().name())
+                new SimpleGrantedAuthority(cuenta.getRole().getTipoRol().name())
         );
     }
 }

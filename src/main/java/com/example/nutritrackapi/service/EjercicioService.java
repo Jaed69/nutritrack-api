@@ -188,7 +188,6 @@ public class EjercicioService {
     /**
      * Elimina un ejercicio.
      * RN09: No permite eliminar ejercicios que estén en uso en rutinas.
-     * Nota: Validación pendiente hasta implementar entidad RutinaEjercicio.
      */
     @Transactional
     public void eliminarEjercicio(Long id) {
@@ -196,13 +195,12 @@ public class EjercicioService {
             throw new EntityNotFoundException("Ejercicio no encontrado con ID: " + id);
         }
 
-        // RN09: Validar que el ejercicio no esté en uso (pendiente)
-        // TODO: Implementar cuando se cree la entidad RutinaEjercicio
-        // if (ejercicioRepository.estaEnUsoEnRutinas(id)) {
-        //     throw new IllegalStateException(
-        //         "No se puede eliminar el ejercicio porque está en uso en una o más rutinas"
-        //     );
-        // }
+        // RN09: Validar que el ejercicio no esté en uso
+        if (ejercicioRepository.estaEnUsoEnRutinas(id)) {
+            throw new IllegalStateException(
+                "No se puede eliminar el ejercicio porque está en uso en una o más rutinas"
+            );
+        }
 
         ejercicioRepository.deleteById(id);
     }
