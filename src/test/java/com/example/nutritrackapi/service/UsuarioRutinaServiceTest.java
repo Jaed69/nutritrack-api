@@ -11,19 +11,37 @@ import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 
+/**
+ * Tests unitarios completos para UsuarioRutinaService
+ * Módulo 4: Exploración y Activación (Cliente)
+ * 
+ * Cubre:
+ * - US-18: Activar una Meta (Rutina)
+ * - US-19: Pausar/Reanudar Meta (Rutina)
+ * - US-20: Completar/Cancelar Meta (Rutina)
+ * - RN17: No duplicar el mismo plan/rutina activo
+ * - RN18: Proponer reemplazo al activar nueva rutina
+ * - RN19: No pausar/reanudar meta completada/cancelada
+ * - RN26: Estado de Asignaciones (Transiciones válidas)
+ */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("UsuarioRutinaService - Tests unitarios Módulo 4")
 class UsuarioRutinaServiceTest {
@@ -42,6 +60,7 @@ class UsuarioRutinaServiceTest {
 
     private PerfilUsuario perfilUsuario;
     private Rutina rutina;
+    private Rutina rutinaDiferente;
     private UsuarioRutina usuarioRutina;
 
     @BeforeEach
@@ -60,116 +79,743 @@ class UsuarioRutinaServiceTest {
                 .activo(true)
                 .build();
 
+        rutinaDiferente = Rutina.builder()
+                .id(2L)
+                .nombre("Rutina de Cardio")
+                .descripcion("Rutina cardiovascular")
+                .duracionSemanas(12)
+                .activo(true)
+                .build();
+
         usuarioRutina = UsuarioRutina.builder()
                 .id(1L)
                 .perfilUsuario(perfilUsuario)
                 .rutina(rutina)
                 .fechaInicio(LocalDate.now())
-                .fechaFin(LocalDate.now().plusWeeks(8))
+                .fechaFin(LocalDate.now().plusWeeks(8).minusDays(1))
                 .semanaActual(1)
                 .estado(UsuarioPlan.EstadoAsignacion.ACTIVO)
                 .build();
     }
 
-    @Test
-    @DisplayName("US-18: Activar rutina exitosamente")
-    void activarRutina_Success() {
-        ActivarRutinaRequest request = new ActivarRutinaRequest();
-        request.setRutinaId(1L);
+    // ============================================================
+    // US-18: Activar una Meta (Rutina)
+    // ============================================================
 
-        when(perfilUsuarioRepository.findById(1L)).thenReturn(Optional.of(perfilUsuario));
-        when(rutinaRepository.findById(1L)).thenReturn(Optional.of(rutina));
-        when(usuarioRutinaRepository.existsByPerfilUsuarioIdAndRutinaIdAndEstado(
-                1L, 1L, UsuarioPlan.EstadoAsignacion.ACTIVO)).thenReturn(false);
-        when(usuarioRutinaRepository.save(any(UsuarioRutina.class))).thenReturn(usuarioRutina);
+    @Nested
+    @DisplayName("US-18: Activar Rutina")
+    class ActivarRutinaTests {
 
-        UsuarioRutinaResponse response = usuarioRutinaService.activarRutina(1L, request);
+        @Test
+        @DisplayName("Debe activar rutina exitosamente cuando no hay duplicados")
+        void activarRutina_Success() {
+            // Given
+            ActivarRutinaRequest request = new ActivarRutinaRequest();
+            request.setRutinaId(1L);
+            request.setFechaInicio(LocalDate.now());
+            request.setNotas("Rutina de prueba");
 
-        assertNotNull(response);
-        assertEquals("Rutina de Fuerza", response.getRutinaNombre());
-        verify(usuarioRutinaRepository).save(any(UsuarioRutina.class));
-    }
+            when(perfilUsuarioRepository.findById(1L)).thenReturn(Optional.of(perfilUsuario));
+            when(rutinaRepository.findById(1L)).thenReturn(Optional.of(rutina));
+            when(usuarioRutinaRepository.existsByPerfilUsuarioIdAndRutinaIdAndEstado(
+                    1L, 1L, UsuarioPlan.EstadoAsignacion.ACTIVO)).thenReturn(false);
+            when(usuarioRutinaRepository.save(any(UsuarioRutina.class))).thenReturn(usuarioRutina);
 
-    @Test
-    @DisplayName("RN17: No permite activar rutina duplicada")
-    void activarRutina_RN17_DuplicadoLanzaExcepcion() {
-        ActivarRutinaRequest request = new ActivarRutinaRequest();
-        request.setRutinaId(1L);
+            // When
+            UsuarioRutinaResponse response = usuarioRutinaService.activarRutina(1L, request);
 
-        when(perfilUsuarioRepository.findById(1L)).thenReturn(Optional.of(perfilUsuario));
-        when(rutinaRepository.findById(1L)).thenReturn(Optional.of(rutina));
-        when(usuarioRutinaRepository.existsByPerfilUsuarioIdAndRutinaIdAndEstado(
-                1L, 1L, UsuarioPlan.EstadoAsignacion.ACTIVO)).thenReturn(true);
+            // Then
+            assertNotNull(response, "La respuesta no debe ser nula");
+            assertEquals("Rutina de Fuerza", response.getRutinaNombre());
+            verify(usuarioRutinaRepository).save(any(UsuarioRutina.class));
+        }
 
-        assertThrows(BusinessException.class, () -> {
+        @Test
+        @DisplayName("Debe calcular fecha fin correctamente según duración en semanas")
+        void activarRutina_CalculaFechaFin() {
+            // Given
+            LocalDate fechaInicio = LocalDate.of(2025, 11, 1);
+            ActivarRutinaRequest request = new ActivarRutinaRequest();
+            request.setRutinaId(1L);
+            request.setFechaInicio(fechaInicio);
+
+            when(perfilUsuarioRepository.findById(1L)).thenReturn(Optional.of(perfilUsuario));
+            when(rutinaRepository.findById(1L)).thenReturn(Optional.of(rutina));
+            when(usuarioRutinaRepository.existsByPerfilUsuarioIdAndRutinaIdAndEstado(
+                    anyLong(), anyLong(), any())).thenReturn(false);
+            when(usuarioRutinaRepository.save(any(UsuarioRutina.class))).thenAnswer(i -> i.getArguments()[0]);
+
+            // When
             usuarioRutinaService.activarRutina(1L, request);
-        });
+
+            // Then
+            verify(usuarioRutinaRepository).save(argThat(ur -> 
+                ur.getFechaInicio().equals(fechaInicio) &&
+                ur.getFechaFin().equals(fechaInicio.plusWeeks(8).minusDays(1)) &&
+                ur.getSemanaActual() == 1 &&
+                ur.getEstado() == UsuarioPlan.EstadoAsignacion.ACTIVO
+            ));
+        }
+
+        @Test
+        @DisplayName("Debe usar fecha actual si no se proporciona fecha inicio")
+        void activarRutina_UsaFechaActualPorDefecto() {
+            // Given
+            ActivarRutinaRequest request = new ActivarRutinaRequest();
+            request.setRutinaId(1L);
+
+            when(perfilUsuarioRepository.findById(1L)).thenReturn(Optional.of(perfilUsuario));
+            when(rutinaRepository.findById(1L)).thenReturn(Optional.of(rutina));
+            when(usuarioRutinaRepository.existsByPerfilUsuarioIdAndRutinaIdAndEstado(
+                    anyLong(), anyLong(), any())).thenReturn(false);
+            when(usuarioRutinaRepository.save(any(UsuarioRutina.class))).thenAnswer(i -> i.getArguments()[0]);
+
+            // When
+            usuarioRutinaService.activarRutina(1L, request);
+
+            // Then
+            verify(usuarioRutinaRepository).save(argThat(ur -> 
+                ur.getFechaInicio().equals(LocalDate.now())
+            ));
+        }
+
+        @Test
+        @DisplayName("Debe lanzar excepción si el perfil no existe")
+        void activarRutina_PerfilNoEncontrado() {
+            // Given
+            ActivarRutinaRequest request = new ActivarRutinaRequest();
+            request.setRutinaId(1L);
+
+            when(perfilUsuarioRepository.findById(999L)).thenReturn(Optional.empty());
+
+            // When & Then
+            EntityNotFoundException exception = assertThrows(EntityNotFoundException.class, () -> {
+                usuarioRutinaService.activarRutina(999L, request);
+            });
+            
+            assertTrue(exception.getMessage().contains("Perfil de usuario no encontrado"));
+            verify(usuarioRutinaRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("Debe lanzar excepción si la rutina no existe")
+        void activarRutina_RutinaNoEncontrada() {
+            // Given
+            ActivarRutinaRequest request = new ActivarRutinaRequest();
+            request.setRutinaId(999L);
+
+            when(perfilUsuarioRepository.findById(1L)).thenReturn(Optional.of(perfilUsuario));
+            when(rutinaRepository.findById(999L)).thenReturn(Optional.empty());
+
+            // When & Then
+            EntityNotFoundException exception = assertThrows(EntityNotFoundException.class, () -> {
+                usuarioRutinaService.activarRutina(1L, request);
+            });
+            
+            assertTrue(exception.getMessage().contains("Rutina no encontrada"));
+            verify(usuarioRutinaRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("Debe lanzar excepción si la rutina está inactiva")
+        void activarRutina_RutinaInactiva() {
+            // Given
+            rutina.setActivo(false);
+            ActivarRutinaRequest request = new ActivarRutinaRequest();
+            request.setRutinaId(1L);
+
+            when(perfilUsuarioRepository.findById(1L)).thenReturn(Optional.of(perfilUsuario));
+            when(rutinaRepository.findById(1L)).thenReturn(Optional.of(rutina));
+
+            // When & Then
+            BusinessException exception = assertThrows(BusinessException.class, () -> {
+                usuarioRutinaService.activarRutina(1L, request);
+            });
+            
+            assertTrue(exception.getMessage().contains("no está disponible"));
+            verify(usuarioRutinaRepository, never()).save(any());
+        }
     }
 
-    @Test
-    @DisplayName("US-19: Pausar rutina exitosamente")
-    void pausarRutina_Success() {
-        when(usuarioRutinaRepository.findById(1L)).thenReturn(Optional.of(usuarioRutina));
-        when(usuarioRutinaRepository.save(any(UsuarioRutina.class))).thenReturn(usuarioRutina);
+    // ============================================================
+    // RN17: No duplicar la misma rutina activa
+    // ============================================================
 
-        UsuarioRutinaResponse response = usuarioRutinaService.pausarRutina(1L, 1L);
+    @Nested
+    @DisplayName("RN17: No duplicar misma rutina activa")
+    class RN17_NoDuplicarRutinaActivaTests {
 
-        assertNotNull(response);
-        verify(usuarioRutinaRepository).save(any(UsuarioRutina.class));
+        @Test
+        @DisplayName("Debe lanzar excepción si ya existe la MISMA rutina ACTIVA")
+        void activarRutina_RN17_MismaRutinaActivaLanzaExcepcion() {
+            // Given
+            ActivarRutinaRequest request = new ActivarRutinaRequest();
+            request.setRutinaId(1L);
+
+            when(perfilUsuarioRepository.findById(1L)).thenReturn(Optional.of(perfilUsuario));
+            when(rutinaRepository.findById(1L)).thenReturn(Optional.of(rutina));
+            when(usuarioRutinaRepository.existsByPerfilUsuarioIdAndRutinaIdAndEstado(
+                    1L, 1L, UsuarioPlan.EstadoAsignacion.ACTIVO)).thenReturn(true);
+
+            // When & Then
+            BusinessException exception = assertThrows(BusinessException.class, () -> {
+                usuarioRutinaService.activarRutina(1L, request);
+            });
+            
+            assertTrue(exception.getMessage().contains("Ya tienes esta rutina activa"));
+            verify(usuarioRutinaRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("Debe permitir activar DIFERENTE rutina aunque ya tenga otra activa")
+        void activarRutina_RN17_PermiteDiferenteRutinaActiva() {
+            // Given
+            ActivarRutinaRequest request = new ActivarRutinaRequest();
+            request.setRutinaId(2L); // Rutina DIFERENTE
+
+            when(perfilUsuarioRepository.findById(1L)).thenReturn(Optional.of(perfilUsuario));
+            when(rutinaRepository.findById(2L)).thenReturn(Optional.of(rutinaDiferente));
+            when(usuarioRutinaRepository.existsByPerfilUsuarioIdAndRutinaIdAndEstado(
+                    1L, 2L, UsuarioPlan.EstadoAsignacion.ACTIVO)).thenReturn(false);
+            when(usuarioRutinaRepository.save(any(UsuarioRutina.class))).thenReturn(usuarioRutina);
+
+            // When
+            UsuarioRutinaResponse response = usuarioRutinaService.activarRutina(1L, request);
+
+            // Then
+            assertNotNull(response, "Debe permitir activar rutina diferente");
+            verify(usuarioRutinaRepository).save(any(UsuarioRutina.class));
+        }
+
+        @Test
+        @DisplayName("Debe permitir activar MISMA rutina si está PAUSADA")
+        void activarRutina_RN17_PermiteMismaRutinaSiEstaPausada() {
+            // Given
+            ActivarRutinaRequest request = new ActivarRutinaRequest();
+            request.setRutinaId(1L);
+
+            when(perfilUsuarioRepository.findById(1L)).thenReturn(Optional.of(perfilUsuario));
+            when(rutinaRepository.findById(1L)).thenReturn(Optional.of(rutina));
+            when(usuarioRutinaRepository.existsByPerfilUsuarioIdAndRutinaIdAndEstado(
+                    1L, 1L, UsuarioPlan.EstadoAsignacion.ACTIVO)).thenReturn(false);
+            when(usuarioRutinaRepository.save(any(UsuarioRutina.class))).thenReturn(usuarioRutina);
+
+            // When
+            UsuarioRutinaResponse response = usuarioRutinaService.activarRutina(1L, request);
+
+            // Then
+            assertNotNull(response, "Debe permitir activar misma rutina si está pausada");
+            verify(usuarioRutinaRepository).save(any(UsuarioRutina.class));
+        }
     }
 
-    @Test
-    @DisplayName("US-19: Reanudar rutina exitosamente")
-    void reanudarRutina_Success() {
-        usuarioRutina.setEstado(UsuarioPlan.EstadoAsignacion.PAUSADO);
-        when(usuarioRutinaRepository.findById(1L)).thenReturn(Optional.of(usuarioRutina));
-        when(usuarioRutinaRepository.save(any(UsuarioRutina.class))).thenReturn(usuarioRutina);
+    // ============================================================
+    // RN18: Proponer reemplazo
+    // ============================================================
 
-        UsuarioRutinaResponse response = usuarioRutinaService.reanudarRutina(1L, 1L);
+    @Nested
+    @DisplayName("RN18: Proponer reemplazo")
+    class RN18_ProponerReemplazoTests {
 
-        assertNotNull(response);
+        @Test
+        @DisplayName("Mensaje de error debe indicar necesidad de pausar/cancelar rutina actual")
+        void activarRutina_RN18_MensajeProponePausarOCancelar() {
+            // Given
+            ActivarRutinaRequest request = new ActivarRutinaRequest();
+            request.setRutinaId(1L);
+
+            when(perfilUsuarioRepository.findById(1L)).thenReturn(Optional.of(perfilUsuario));
+            when(rutinaRepository.findById(1L)).thenReturn(Optional.of(rutina));
+            when(usuarioRutinaRepository.existsByPerfilUsuarioIdAndRutinaIdAndEstado(
+                    1L, 1L, UsuarioPlan.EstadoAsignacion.ACTIVO)).thenReturn(true);
+
+            // When & Then
+            BusinessException exception = assertThrows(BusinessException.class, () -> {
+                usuarioRutinaService.activarRutina(1L, request);
+            });
+            
+            String mensaje = exception.getMessage().toLowerCase();
+            assertTrue(mensaje.contains("pausarla") || mensaje.contains("cancelarla"),
+                    "El mensaje debe proponer pausar o cancelar la rutina actual");
+        }
     }
 
-    @Test
-    @DisplayName("US-20: Completar rutina exitosamente")
-    void completarRutina_Success() {
-        when(usuarioRutinaRepository.findById(1L)).thenReturn(Optional.of(usuarioRutina));
-        when(usuarioRutinaRepository.save(any(UsuarioRutina.class))).thenReturn(usuarioRutina);
+    // ============================================================
+    // US-19: Pausar/Reanudar Meta (Rutina)
+    // ============================================================
 
-        UsuarioRutinaResponse response = usuarioRutinaService.completarRutina(1L, 1L);
+    @Nested
+    @DisplayName("US-19: Pausar Rutina")
+    class PausarRutinaTests {
 
-        assertNotNull(response);
+        @Test
+        @DisplayName("Debe pausar rutina ACTIVA exitosamente")
+        void pausarRutina_Success() {
+            // Given
+            when(usuarioRutinaRepository.findById(1L)).thenReturn(Optional.of(usuarioRutina));
+            when(usuarioRutinaRepository.save(any(UsuarioRutina.class))).thenAnswer(i -> i.getArguments()[0]);
+
+            // When
+            UsuarioRutinaResponse response = usuarioRutinaService.pausarRutina(1L, 1L);
+
+            // Then
+            assertNotNull(response);
+            verify(usuarioRutinaRepository).save(argThat(ur -> 
+                ur.getEstado() == UsuarioPlan.EstadoAsignacion.PAUSADO
+            ));
+        }
+
+        @Test
+        @DisplayName("Debe validar que la rutina pertenece al usuario")
+        void pausarRutina_ValidaPropietario() {
+            // Given
+            usuarioRutina.getPerfilUsuario().setId(99L);
+            when(usuarioRutinaRepository.findById(1L)).thenReturn(Optional.of(usuarioRutina));
+
+            // When & Then
+            BusinessException exception = assertThrows(BusinessException.class, () -> {
+                usuarioRutinaService.pausarRutina(1L, 1L);
+            });
+            
+            assertTrue(exception.getMessage().contains("no pertenece al usuario"));
+        }
     }
 
-    @Test
-    @DisplayName("US-20: Cancelar rutina exitosamente")
-    void cancelarRutina_Success() {
-        when(usuarioRutinaRepository.findById(1L)).thenReturn(Optional.of(usuarioRutina));
-        when(usuarioRutinaRepository.save(any(UsuarioRutina.class))).thenReturn(usuarioRutina);
+    @Nested
+    @DisplayName("US-19: Reanudar Rutina")
+    class ReanudarRutinaTests {
 
-        UsuarioRutinaResponse response = usuarioRutinaService.cancelarRutina(1L, 1L);
+        @Test
+        @DisplayName("Debe reanudar rutina PAUSADA exitosamente")
+        void reanudarRutina_Success() {
+            // Given
+            usuarioRutina.setEstado(UsuarioPlan.EstadoAsignacion.PAUSADO);
+            usuarioRutina.setFechaInicio(LocalDate.now().minusWeeks(2));
+            usuarioRutina.setSemanaActual(2);
+            
+            when(usuarioRutinaRepository.findById(1L)).thenReturn(Optional.of(usuarioRutina));
+            when(usuarioRutinaRepository.save(any(UsuarioRutina.class))).thenAnswer(i -> i.getArguments()[0]);
 
-        assertNotNull(response);
+            // When
+            UsuarioRutinaResponse response = usuarioRutinaService.reanudarRutina(1L, 1L);
+
+            // Then
+            assertNotNull(response);
+            verify(usuarioRutinaRepository).save(argThat(ur -> 
+                ur.getEstado() == UsuarioPlan.EstadoAsignacion.ACTIVO
+            ));
+        }
+
+        @Test
+        @DisplayName("Debe ajustar fecha fin al reanudar rutina pausada")
+        void reanudarRutina_AjustaFechaFin() {
+            // Given
+            LocalDate fechaInicio = LocalDate.now().minusWeeks(5);
+            usuarioRutina.setEstado(UsuarioPlan.EstadoAsignacion.PAUSADO);
+            usuarioRutina.setFechaInicio(fechaInicio);
+            usuarioRutina.setFechaFin(fechaInicio.plusWeeks(8).minusDays(1));
+            usuarioRutina.setSemanaActual(3);
+            
+            when(usuarioRutinaRepository.findById(1L)).thenReturn(Optional.of(usuarioRutina));
+            when(usuarioRutinaRepository.save(any(UsuarioRutina.class))).thenAnswer(i -> i.getArguments()[0]);
+
+            // When
+            usuarioRutinaService.reanudarRutina(1L, 1L);
+
+            // Then
+            verify(usuarioRutinaRepository).save(argThat(ur -> 
+                ur.getFechaFin().isAfter(fechaInicio.plusWeeks(8).minusDays(1))
+            ));
+        }
     }
 
-    @Test
-    @DisplayName("Obtener rutina activa actual")
-    void obtenerRutinaActiva_Success() {
-        when(usuarioRutinaRepository.findRutinaActivaActual(1L)).thenReturn(Optional.of(usuarioRutina));
+    // ============================================================
+    // RN19: No pausar/reanudar en estado final
+    // ============================================================
 
-        UsuarioRutinaResponse response = usuarioRutinaService.obtenerRutinaActiva(1L);
+    @Nested
+    @DisplayName("RN19: No pausar/reanudar en estado final")
+    class RN19_NoOperarEstadoFinalTests {
 
-        assertNotNull(response);
+        @Test
+        @DisplayName("No debe permitir pausar rutina COMPLETADA")
+        void pausarRutina_RN19_CompletadaLanzaExcepcion() {
+            // Given
+            usuarioRutina.setEstado(UsuarioPlan.EstadoAsignacion.COMPLETADO);
+            when(usuarioRutinaRepository.findById(1L)).thenReturn(Optional.of(usuarioRutina));
+
+            // When & Then
+            BusinessException exception = assertThrows(BusinessException.class, () -> {
+                usuarioRutinaService.pausarRutina(1L, 1L);
+            });
+            
+            assertTrue(exception.getMessage().toLowerCase().contains("completada") || 
+                      exception.getMessage().toLowerCase().contains("cancelada"));
+        }
+
+        @Test
+        @DisplayName("No debe permitir pausar rutina CANCELADA")
+        void pausarRutina_RN19_CanceladaLanzaExcepcion() {
+            // Given
+            usuarioRutina.setEstado(UsuarioPlan.EstadoAsignacion.CANCELADO);
+            when(usuarioRutinaRepository.findById(1L)).thenReturn(Optional.of(usuarioRutina));
+
+            // When & Then
+            assertThrows(BusinessException.class, () -> {
+                usuarioRutinaService.pausarRutina(1L, 1L);
+            });
+        }
+
+        @Test
+        @DisplayName("No debe permitir reanudar rutina COMPLETADA")
+        void reanudarRutina_RN19_CompletadaLanzaExcepcion() {
+            // Given
+            usuarioRutina.setEstado(UsuarioPlan.EstadoAsignacion.COMPLETADO);
+            when(usuarioRutinaRepository.findById(1L)).thenReturn(Optional.of(usuarioRutina));
+
+            // When & Then
+            assertThrows(BusinessException.class, () -> {
+                usuarioRutinaService.reanudarRutina(1L, 1L);
+            });
+        }
+
+        @Test
+        @DisplayName("No debe permitir reanudar rutina CANCELADA")
+        void reanudarRutina_RN19_CanceladaLanzaExcepcion() {
+            // Given
+            usuarioRutina.setEstado(UsuarioPlan.EstadoAsignacion.CANCELADO);
+            when(usuarioRutinaRepository.findById(1L)).thenReturn(Optional.of(usuarioRutina));
+
+            // When & Then
+            assertThrows(BusinessException.class, () -> {
+                usuarioRutinaService.reanudarRutina(1L, 1L);
+            });
+        }
+
+        @Test
+        @DisplayName("No debe permitir reanudar rutina que ya está ACTIVA")
+        void reanudarRutina_RN19_ActivaLanzaExcepcion() {
+            // Given
+            usuarioRutina.setEstado(UsuarioPlan.EstadoAsignacion.ACTIVO);
+            when(usuarioRutinaRepository.findById(1L)).thenReturn(Optional.of(usuarioRutina));
+
+            // When & Then
+            BusinessException exception = assertThrows(BusinessException.class, () -> {
+                usuarioRutinaService.reanudarRutina(1L, 1L);
+            });
+            
+            assertTrue(exception.getMessage().toLowerCase().contains("pausada"));
+        }
     }
 
-    @Test
-    @DisplayName("Obtener todas las rutinas del usuario")
-    void obtenerRutinas_Success() {
-        when(usuarioRutinaRepository.findByPerfilUsuarioId(1L)).thenReturn(List.of(usuarioRutina));
+    // ============================================================
+    // US-20: Completar/Cancelar Meta (Rutina)
+    // ============================================================
 
-        List<UsuarioRutinaResponse> response = usuarioRutinaService.obtenerRutinas(1L);
+    @Nested
+    @DisplayName("US-20: Completar Rutina")
+    class CompletarRutinaTests {
 
-        assertNotNull(response);
-        assertEquals(1, response.size());
+        @Test
+        @DisplayName("Debe completar rutina ACTIVA exitosamente")
+        void completarRutina_Success() {
+            // Given
+            when(usuarioRutinaRepository.findById(1L)).thenReturn(Optional.of(usuarioRutina));
+            when(usuarioRutinaRepository.save(any(UsuarioRutina.class))).thenAnswer(i -> i.getArguments()[0]);
+
+            // When
+            UsuarioRutinaResponse response = usuarioRutinaService.completarRutina(1L, 1L);
+
+            // Then
+            assertNotNull(response);
+            verify(usuarioRutinaRepository).save(argThat(ur -> 
+                ur.getEstado() == UsuarioPlan.EstadoAsignacion.COMPLETADO &&
+                ur.getFechaFin().equals(LocalDate.now())
+            ));
+        }
+
+        @Test
+        @DisplayName("Debe completar rutina PAUSADA exitosamente")
+        void completarRutina_DesdePausada() {
+            // Given
+            usuarioRutina.setEstado(UsuarioPlan.EstadoAsignacion.PAUSADO);
+            when(usuarioRutinaRepository.findById(1L)).thenReturn(Optional.of(usuarioRutina));
+            when(usuarioRutinaRepository.save(any(UsuarioRutina.class))).thenAnswer(i -> i.getArguments()[0]);
+
+            // When
+            UsuarioRutinaResponse response = usuarioRutinaService.completarRutina(1L, 1L);
+
+            // Then
+            assertNotNull(response);
+            verify(usuarioRutinaRepository).save(argThat(ur -> 
+                ur.getEstado() == UsuarioPlan.EstadoAsignacion.COMPLETADO
+            ));
+        }
+    }
+
+    @Nested
+    @DisplayName("US-20: Cancelar Rutina")
+    class CancelarRutinaTests {
+
+        @Test
+        @DisplayName("Debe cancelar rutina ACTIVA exitosamente")
+        void cancelarRutina_Success() {
+            // Given
+            when(usuarioRutinaRepository.findById(1L)).thenReturn(Optional.of(usuarioRutina));
+            when(usuarioRutinaRepository.save(any(UsuarioRutina.class))).thenAnswer(i -> i.getArguments()[0]);
+
+            // When
+            UsuarioRutinaResponse response = usuarioRutinaService.cancelarRutina(1L, 1L);
+
+            // Then
+            assertNotNull(response);
+            verify(usuarioRutinaRepository).save(argThat(ur -> 
+                ur.getEstado() == UsuarioPlan.EstadoAsignacion.CANCELADO &&
+                ur.getFechaFin().equals(LocalDate.now())
+            ));
+        }
+
+        @Test
+        @DisplayName("Debe cancelar rutina PAUSADA exitosamente")
+        void cancelarRutina_DesdePausada() {
+            // Given
+            usuarioRutina.setEstado(UsuarioPlan.EstadoAsignacion.PAUSADO);
+            when(usuarioRutinaRepository.findById(1L)).thenReturn(Optional.of(usuarioRutina));
+            when(usuarioRutinaRepository.save(any(UsuarioRutina.class))).thenAnswer(i -> i.getArguments()[0]);
+
+            // When
+            UsuarioRutinaResponse response = usuarioRutinaService.cancelarRutina(1L, 1L);
+
+            // Then
+            assertNotNull(response);
+            verify(usuarioRutinaRepository).save(argThat(ur -> 
+                ur.getEstado() == UsuarioPlan.EstadoAsignacion.CANCELADO
+            ));
+        }
+    }
+
+    // ============================================================
+    // RN26: Transiciones de estado válidas
+    // ============================================================
+
+    @Nested
+    @DisplayName("RN26: Transiciones de estado válidas")
+    class RN26_TransicionesEstadoTests {
+
+        @Test
+        @DisplayName("ACTIVO → COMPLETADO es transición válida")
+        void completarRutina_RN26_ActivoACompletado() {
+            // Given
+            usuarioRutina.setEstado(UsuarioPlan.EstadoAsignacion.ACTIVO);
+            when(usuarioRutinaRepository.findById(1L)).thenReturn(Optional.of(usuarioRutina));
+            when(usuarioRutinaRepository.save(any(UsuarioRutina.class))).thenAnswer(i -> i.getArguments()[0]);
+
+            // When
+            usuarioRutinaService.completarRutina(1L, 1L);
+
+            // Then
+            verify(usuarioRutinaRepository).save(argThat(ur -> 
+                ur.getEstado() == UsuarioPlan.EstadoAsignacion.COMPLETADO
+            ));
+        }
+
+        @Test
+        @DisplayName("ACTIVO → CANCELADO es transición válida")
+        void cancelarRutina_RN26_ActivoACancelado() {
+            // Given
+            usuarioRutina.setEstado(UsuarioPlan.EstadoAsignacion.ACTIVO);
+            when(usuarioRutinaRepository.findById(1L)).thenReturn(Optional.of(usuarioRutina));
+            when(usuarioRutinaRepository.save(any(UsuarioRutina.class))).thenAnswer(i -> i.getArguments()[0]);
+
+            // When
+            usuarioRutinaService.cancelarRutina(1L, 1L);
+
+            // Then
+            verify(usuarioRutinaRepository).save(argThat(ur -> 
+                ur.getEstado() == UsuarioPlan.EstadoAsignacion.CANCELADO
+            ));
+        }
+
+        @Test
+        @DisplayName("ACTIVO → PAUSADO es transición válida")
+        void pausarRutina_RN26_ActivoAPausado() {
+            // Given
+            usuarioRutina.setEstado(UsuarioPlan.EstadoAsignacion.ACTIVO);
+            when(usuarioRutinaRepository.findById(1L)).thenReturn(Optional.of(usuarioRutina));
+            when(usuarioRutinaRepository.save(any(UsuarioRutina.class))).thenAnswer(i -> i.getArguments()[0]);
+
+            // When
+            usuarioRutinaService.pausarRutina(1L, 1L);
+
+            // Then
+            verify(usuarioRutinaRepository).save(argThat(ur -> 
+                ur.getEstado() == UsuarioPlan.EstadoAsignacion.PAUSADO
+            ));
+        }
+
+        @Test
+        @DisplayName("PAUSADO → ACTIVO es transición válida")
+        void reanudarRutina_RN26_PausadoAActivo() {
+            // Given
+            usuarioRutina.setEstado(UsuarioPlan.EstadoAsignacion.PAUSADO);
+            when(usuarioRutinaRepository.findById(1L)).thenReturn(Optional.of(usuarioRutina));
+            when(usuarioRutinaRepository.save(any(UsuarioRutina.class))).thenAnswer(i -> i.getArguments()[0]);
+
+            // When
+            usuarioRutinaService.reanudarRutina(1L, 1L);
+
+            // Then
+            verify(usuarioRutinaRepository).save(argThat(ur -> 
+                ur.getEstado() == UsuarioPlan.EstadoAsignacion.ACTIVO
+            ));
+        }
+
+        @Test
+        @DisplayName("COMPLETADO → ACTIVO NO es transición válida")
+        void completarRutina_RN26_CompletadoAActivoNoValido() {
+            // Given
+            usuarioRutina.setEstado(UsuarioPlan.EstadoAsignacion.COMPLETADO);
+            when(usuarioRutinaRepository.findById(1L)).thenReturn(Optional.of(usuarioRutina));
+
+            // When & Then
+            assertThrows(BusinessException.class, () -> {
+                usuarioRutinaService.completarRutina(1L, 1L);
+            });
+        }
+
+        @Test
+        @DisplayName("CANCELADO → ACTIVO NO es transición válida")
+        void reanudarRutina_RN26_CanceladoAActivoNoValido() {
+            // Given
+            usuarioRutina.setEstado(UsuarioPlan.EstadoAsignacion.CANCELADO);
+            when(usuarioRutinaRepository.findById(1L)).thenReturn(Optional.of(usuarioRutina));
+
+            // When & Then
+            assertThrows(BusinessException.class, () -> {
+                usuarioRutinaService.reanudarRutina(1L, 1L);
+            });
+        }
+    }
+
+    // ============================================================
+    // Tests de Consulta
+    // ============================================================
+
+    @Nested
+    @DisplayName("Consultas de rutinas")
+    class ConsultasTests {
+
+        @Test
+        @DisplayName("Debe obtener rutina activa actual del usuario")
+        void obtenerRutinaActiva_Success() {
+            // Given
+            when(usuarioRutinaRepository.findRutinaActivaActual(1L)).thenReturn(Optional.of(usuarioRutina));
+
+            // When
+            UsuarioRutinaResponse response = usuarioRutinaService.obtenerRutinaActiva(1L);
+
+            // Then
+            assertNotNull(response);
+            assertEquals("Rutina de Fuerza", response.getRutinaNombre());
+            assertEquals("ACTIVO", response.getEstado());
+        }
+
+        @Test
+        @DisplayName("Debe retornar null si no hay rutina activa")
+        void obtenerRutinaActiva_NoExiste() {
+            // Given
+            when(usuarioRutinaRepository.findRutinaActivaActual(1L)).thenReturn(Optional.empty());
+
+            // When
+            UsuarioRutinaResponse response = usuarioRutinaService.obtenerRutinaActiva(1L);
+
+            // Then
+            assertNull(response, "Debe retornar null si no hay rutina activa");
+        }
+
+        @Test
+        @DisplayName("Debe obtener todas las rutinas del usuario")
+        void obtenerRutinas_Success() {
+            // Given
+            UsuarioRutina rutinaPausada = UsuarioRutina.builder()
+                    .id(2L)
+                    .perfilUsuario(perfilUsuario)
+                    .rutina(rutinaDiferente)
+                    .estado(UsuarioPlan.EstadoAsignacion.PAUSADO)
+                    .build();
+            
+            when(usuarioRutinaRepository.findByPerfilUsuarioId(1L))
+                    .thenReturn(List.of(usuarioRutina, rutinaPausada));
+
+            // When
+            List<UsuarioRutinaResponse> response = usuarioRutinaService.obtenerRutinas(1L);
+
+            // Then
+            assertNotNull(response);
+            assertEquals(2, response.size());
+        }
+
+        @Test
+        @DisplayName("Debe obtener solo rutinas activas del usuario")
+        void obtenerRutinasActivas_Success() {
+            // Given
+            when(usuarioRutinaRepository.findAllRutinasActivas(1L))
+                    .thenReturn(List.of(usuarioRutina));
+
+            // When
+            List<UsuarioRutinaResponse> response = usuarioRutinaService.obtenerRutinasActivas(1L);
+
+            // Then
+            assertNotNull(response);
+            assertEquals(1, response.size());
+            assertEquals("ACTIVO", response.get(0).getEstado());
+        }
+
+        @Test
+        @DisplayName("Debe retornar lista vacía si usuario no tiene rutinas")
+        void obtenerRutinas_ListaVacia() {
+            // Given
+            when(usuarioRutinaRepository.findByPerfilUsuarioId(1L))
+                    .thenReturn(new ArrayList<>());
+
+            // When
+            List<UsuarioRutinaResponse> response = usuarioRutinaService.obtenerRutinas(1L);
+
+            // Then
+            assertNotNull(response);
+            assertTrue(response.isEmpty());
+        }
+    }
+
+    // ============================================================
+    // Tests de Actualización Automática
+    // ============================================================
+
+    @Nested
+    @DisplayName("Actualización automática de semanas")
+    class ActualizacionAutomaticaTests {
+
+        @Test
+        @DisplayName("Debe auto-completar rutina al llegar a la última semana")
+        void actualizarSemanasActuales_AutoCompletarRutina() {
+            // Given
+            usuarioRutina.setFechaInicio(LocalDate.now().minusWeeks(8));
+            usuarioRutina.setSemanaActual(8);
+            usuarioRutina.setEstado(UsuarioPlan.EstadoAsignacion.ACTIVO);
+            
+            when(usuarioRutinaRepository.findByPerfilUsuarioIdAndEstado(
+                    null, UsuarioPlan.EstadoAsignacion.ACTIVO))
+                    .thenReturn(List.of(usuarioRutina));
+            when(usuarioRutinaRepository.saveAll(anyList())).thenAnswer(i -> i.getArguments()[0]);
+
+            // When
+            usuarioRutinaService.actualizarSemanasActuales();
+
+            // Then
+            verify(usuarioRutinaRepository).saveAll(argThat(list -> {
+                List<UsuarioRutina> rutinas = (List<UsuarioRutina>) list;
+                return rutinas.get(0).getEstado() == UsuarioPlan.EstadoAsignacion.COMPLETADO;
+            }));
+        }
     }
 }
