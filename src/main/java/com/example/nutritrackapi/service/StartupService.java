@@ -198,8 +198,7 @@ public class StartupService implements CommandLineRunner {
 
     private void createHealthProfile(PerfilUsuario perfil, UsuarioPerfilSalud.ObjetivoSalud objetivo, UsuarioPerfilSalud.NivelActividad actividad) {
         UsuarioPerfilSalud perfilSalud = UsuarioPerfilSalud.builder()
-                .id(perfil.getId())
-                .perfilUsuario(perfil)
+                .perfilUsuario(perfil) // @MapsId asignará automáticamente el ID
                 .objetivoActual(objetivo)
                 .nivelActividadActual(actividad)
                 .fechaActualizacion(LocalDate.now())
