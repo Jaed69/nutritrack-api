@@ -12,6 +12,7 @@ services:
     region: oregon
     env: docker
     dockerfilePath: ./Dockerfile
+    dockerCommand: java -Dspring.profiles.active=prod -jar app.jar
     envVars:
       - key: DATABASE_URL
         fromDatabase:
