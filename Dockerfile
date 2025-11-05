@@ -6,16 +6,11 @@
 FROM maven:3.9-eclipse-temurin-21 AS build
 WORKDIR /app
 
-# Copiar pom.xml primero (para aprovechar cache de Docker)
+# Copiar pom.xml y código fuente
 COPY pom.xml .
-
-# Descargar dependencias (esto se cachea si pom.xml no cambia)
-RUN mvn dependency:go-offline -B
-
-# Copiar código fuente
 COPY src ./src
 
-# Construir la aplicación (sin tests para deployment rápido)
+# Construir la aplicación (Maven descarga dependencias automáticamente)
 RUN mvn clean package -DskipTests -B
 
 # Etapa 2: Runtime con JRE
