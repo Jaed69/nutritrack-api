@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -39,6 +40,7 @@ public class RegistroController {
     // ============================================================
 
     @PostMapping("/comidas")
+    @PreAuthorize("hasRole('USER')")
     @Operation(summary = "👤 USER - US-22: Registrar comida [RN20, RN21]", 
                description = """
                    REGLAS DE NEGOCIO IMPLEMENTADAS:
@@ -62,6 +64,7 @@ public class RegistroController {
     }
 
     @PostMapping("/ejercicios")
+    @PreAuthorize("hasRole('USER')")
     @Operation(summary = "👤 USER - Registrar ejercicio realizado", description = "US-22: Marcar ejercicio como completado. SOLO USUARIOS REGULARES.")
     public ResponseEntity<RegistroEjercicioResponse> registrarEjercicio(
             @Valid @RequestBody RegistroEjercicioRequest request,
@@ -76,6 +79,7 @@ public class RegistroController {
     // ============================================================
 
     @GetMapping("/plan/hoy")
+    @PreAuthorize("hasRole('USER')")
     @Operation(summary = "👤 USER - US-21: Ver actividades del plan [RN20, RN23]", 
                description = """
                    REGLAS DE NEGOCIO IMPLEMENTADAS:
@@ -94,6 +98,7 @@ public class RegistroController {
     }
 
     @GetMapping("/plan/dia")
+    @PreAuthorize("hasRole('USER')")
     @Operation(summary = "👤 USER - Ver actividades del plan en una fecha", description = "US-21: Obtener comidas de un día específico. SOLO USUARIOS REGULARES.")
     public ResponseEntity<ActividadesDiaResponse> obtenerActividadesDia(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha,
@@ -104,6 +109,7 @@ public class RegistroController {
     }
 
     @GetMapping("/rutina/hoy")
+    @PreAuthorize("hasRole('USER')")
     @Operation(summary = "👤 USER - Ver ejercicios de la rutina de hoy", description = "US-21: Obtener ejercicios programados y su estado. SOLO USUARIOS REGULARES.")
     public ResponseEntity<EjerciciosDiaResponse> obtenerEjerciciosHoy(Authentication authentication) {
         Long perfilUsuarioId = obtenerPerfilUsuarioId(authentication);
@@ -112,6 +118,7 @@ public class RegistroController {
     }
 
     @GetMapping("/rutina/dia")
+    @PreAuthorize("hasRole('USER')")
     @Operation(summary = "👤 USER - Ver ejercicios de la rutina en una fecha", description = "US-21: Obtener ejercicios de un día específico. SOLO USUARIOS REGULARES.")
     public ResponseEntity<EjerciciosDiaResponse> obtenerEjerciciosDia(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha,
@@ -126,6 +133,7 @@ public class RegistroController {
     // ============================================================
 
     @DeleteMapping("/comidas/{registroId}")
+    @PreAuthorize("hasRole('USER')")
     @Operation(summary = "👤 USER - Eliminar registro de comida", description = "US-23: Desmarcar comida completada. SOLO USUARIOS REGULARES.")
     public ResponseEntity<Void> eliminarRegistroComida(
             @PathVariable Long registroId,
@@ -136,6 +144,7 @@ public class RegistroController {
     }
 
     @DeleteMapping("/ejercicios/{registroId}")
+    @PreAuthorize("hasRole('USER')")
     @Operation(summary = "👤 USER - Eliminar registro de ejercicio", description = "US-23: Desmarcar ejercicio completado. SOLO USUARIOS REGULARES.")
     public ResponseEntity<Void> eliminarRegistroEjercicio(
             @PathVariable Long registroId,
@@ -150,7 +159,8 @@ public class RegistroController {
     // ============================================================
 
     @GetMapping("/comidas/historial")
-    @Operation(summary = "Obtener historial de comidas", description = "Consultar registros de comidas en un rango de fechas")
+    @PreAuthorize("hasRole('USER')")
+    @Operation(summary = "👤 USER - Obtener historial de comidas", description = "Consultar registros de comidas en un rango de fechas. SOLO USUARIOS REGULARES.")
     public ResponseEntity<List<RegistroComidaResponse>> obtenerHistorialComidas(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaFin,
@@ -162,7 +172,8 @@ public class RegistroController {
     }
 
     @GetMapping("/ejercicios/historial")
-    @Operation(summary = "Obtener historial de ejercicios", description = "Consultar registros de ejercicios en un rango de fechas")
+    @PreAuthorize("hasRole('USER')")
+    @Operation(summary = "👤 USER - Obtener historial de ejercicios", description = "Consultar registros de ejercicios en un rango de fechas. SOLO USUARIOS REGULARES.")
     public ResponseEntity<List<RegistroEjercicioResponse>> obtenerHistorialEjercicios(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaFin,
@@ -174,7 +185,8 @@ public class RegistroController {
     }
 
     @GetMapping("/comidas/{registroId}")
-    @Operation(summary = "Obtener detalle de registro de comida", description = "Consultar información completa de un registro específico")
+    @PreAuthorize("hasRole('USER')")
+    @Operation(summary = "👤 USER - Obtener detalle de registro de comida", description = "Consultar información completa de un registro específico. SOLO USUARIOS REGULARES.")
     public ResponseEntity<RegistroComidaResponse> obtenerRegistroComida(
             @PathVariable Long registroId,
             Authentication authentication) {
@@ -184,7 +196,8 @@ public class RegistroController {
     }
 
     @GetMapping("/ejercicios/{registroId}")
-    @Operation(summary = "Obtener detalle de registro de ejercicio", description = "Consultar información completa de un registro específico")
+    @PreAuthorize("hasRole('USER')")
+    @Operation(summary = "👤 USER - Obtener detalle de registro de ejercicio", description = "Consultar información completa de un registro específico. SOLO USUARIOS REGULARES.")
     public ResponseEntity<RegistroEjercicioResponse> obtenerRegistroEjercicio(
             @PathVariable Long registroId,
             Authentication authentication) {
