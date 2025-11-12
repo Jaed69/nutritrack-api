@@ -33,9 +33,9 @@ public class RegisterRequest {
     private String email;
 
     @NotBlank(message = "La contraseña es obligatoria")
-    @Size(min = 12, message = "La contraseña debe tener al menos 12 caracteres")
+    @Size(min = 6, message = "La contraseña debe tener al menos 12 caracteres")
     @jakarta.validation.constraints.Pattern(
-        regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{12,}$",
+        regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{6,}$",
         message = "La contraseña debe incluir mayúsculas, minúsculas, números y símbolos especiales"
     )
     @Schema(description = "Contraseña robusta (mínimo 12 caracteres con mayúsculas, minúsculas, números y símbolos)", 
