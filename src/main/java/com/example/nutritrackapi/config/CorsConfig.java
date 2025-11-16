@@ -20,6 +20,7 @@ public class CorsConfig {
 
         // Orígenes permitidos (en producción, especificar dominios exactos)
         configuration.setAllowedOrigins(Arrays.asList(
+            "http://localhost:8080",    // Swagger UI local
             "http://localhost:3000",    // React dev server
             "http://localhost:4200",    // Angular dev server
             "https://nutritrack-api-wt8b.onrender.com"  // Render production
