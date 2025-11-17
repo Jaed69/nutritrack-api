@@ -139,10 +139,14 @@ public class StartupService implements CommandLineRunner {
 
     private void initializeDemoData() {
         // Verificar si ya existen datos de demostración
+        // Solo carga perfiles de salud y mediciones si no existen
         if (usuarioPerfilSaludRepository.count() > 0) {
             log.info("ℹ️ Datos de demostración ya existen");
             return;
         }
+        
+        // NOTA: El catálogo (ingredientes, comidas, ejercicios, planes, rutinas)
+        // debe cargarse manualmente ejecutando: SQL/CARGA_COMPLETA_RENDER.sql
         
         log.info("📊 Cargando datos de demostración...");
         
