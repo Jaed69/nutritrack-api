@@ -333,7 +333,7 @@ class RutinaServiceTest {
     void debeObtenerEjerciciosDeRutinaOrdenados() {
         // Given
         when(rutinaRepository.existsById(1L)).thenReturn(true);
-        when(rutinaEjercicioRepository.findByRutinaIdOrderByOrdenAsc(1L))
+        when(rutinaEjercicioRepository.findByRutinaIdOrderBySemanaBaseAscDiaSemanaAscOrdenAsc(1L))
             .thenReturn(List.of(rutinaEjercicio));
 
         // When

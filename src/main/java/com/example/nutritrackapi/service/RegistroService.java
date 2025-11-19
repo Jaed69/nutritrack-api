@@ -260,8 +260,8 @@ public class RegistroService {
 
         // Obtener ejercicios programados
         List<RutinaEjercicio> ejerciciosRutina = rutinaEjercicioRepository
-                .findByRutinaIdOrderByOrdenAsc(rutinaActiva.getRutina().getId());
-
+                .findByRutinaIdOrderBySemanaBaseAscDiaSemanaAscOrdenAsc(rutinaActiva.getRutina().getId());
+        
         // Obtener registros del día
         List<RegistroEjercicio> registros = registroEjercicioRepository
                 .findByPerfilUsuarioIdAndFecha(perfilUsuarioId, fecha);
