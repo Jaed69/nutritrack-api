@@ -21,6 +21,33 @@ public class PerfilController {
     private final PerfilService perfilService;
 
     /**
+     * Obtener información completa del usuario
+     * Incluye datos personales, perfil de salud, última medición y estadísticas
+     */
+    @GetMapping("/completo")
+    @Operation(summary = "👤 USER - Obtener perfil completo del usuario",
+               description = """
+                   Retorna toda la información del usuario en un solo endpoint:
+                   - Datos de cuenta (email, rol, fecha registro)
+                   - Datos personales (nombre, apellido, unidades)
+                   - Perfil de salud (objetivo, nivel actividad, etiquetas)
+                   - Última medición corporal (peso, altura, IMC)
+                   - Estadísticas básicas (total mediciones)
+                   
+                   Útil para pantallas de perfil y dashboard del usuario.
+                   """)
+    public ResponseEntity<ApiResponse<PerfilCompletoResponse>> obtenerPerfilCompleto(
+            Authentication authentication) {
+        try {
+            PerfilCompletoResponse response = perfilService.obtenerPerfilCompleto(authentication.getName());
+            return ResponseEntity.ok(ApiResponse.success(response, "Perfil completo obtenido"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    /**
      * US-03: Actualizar unidades de medida
      * RN03: La unidad aplica a todas las vistas
      */

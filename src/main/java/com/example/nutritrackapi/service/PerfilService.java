@@ -206,6 +206,95 @@ public class PerfilService {
     }
 
     /**
+     * Obtener información completa del usuario
+     * Incluye datos personales, perfil de salud y última medición
+     */
+    @Transactional(readOnly = true)
+    public PerfilCompletoResponse obtenerPerfilCompleto(String email) {
+        CuentaAuth cuenta = cuentaAuthRepository.findByEmail(email)
+            .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        
+        PerfilUsuario perfil = cuenta.getPerfilUsuario();
+        
+        // Construir respuesta base
+        PerfilCompletoResponse.PerfilCompletoResponseBuilder builder = PerfilCompletoResponse.builder()
+            .id(cuenta.getId())
+            .email(cuenta.getEmail())
+            .rol(cuenta.getRole() != null ? cuenta.getRole().getTipoRol().name() : null)
+            .activo(cuenta.getActive())
+            .fechaRegistro(cuenta.getCreatedAt())
+            .nombre(perfil.getNombre())
+            .apellido(perfil.getApellido())
+            .nombreCompleto(perfil.getNombre() + " " + perfil.getApellido())
+            .unidadesMedida(perfil.getUnidadesMedida())
+            .fechaInicioApp(perfil.getFechaInicioApp());
+        
+        // Agregar perfil de salud si existe
+        UsuarioPerfilSalud perfilSalud = perfilSaludRepository.findByPerfilUsuarioId(perfil.getId())
+            .orElse(null);
+        
+        if (perfilSalud != null) {
+            List<Etiqueta> etiquetas = etiquetasSaludRepository.findEtiquetasByPerfilId(perfil.getId());
+            
+            PerfilCompletoResponse.PerfilSaludInfo saludInfo = PerfilCompletoResponse.PerfilSaludInfo.builder()
+                .id(perfilSalud.getId())
+                .objetivoActual(perfilSalud.getObjetivoActual() != null ? perfilSalud.getObjetivoActual().name() : null)
+                .nivelActividadActual(perfilSalud.getNivelActividadActual() != null ? perfilSalud.getNivelActividadActual().name() : null)
+                .fechaActualizacion(perfilSalud.getFechaActualizacion())
+                .etiquetas(etiquetas.stream()
+                    .map(e -> PerfilCompletoResponse.EtiquetaInfo.builder()
+                        .id(e.getId())
+                        .nombre(e.getNombre())
+                        .tipoEtiqueta(e.getTipoEtiqueta() != null ? e.getTipoEtiqueta().name() : null)
+                        .descripcion(e.getDescripcion())
+                        .build())
+                    .collect(Collectors.toList()))
+                .build();
+            
+            builder.perfilSalud(saludInfo);
+        }
+        
+        // Agregar última medición si existe
+        List<UsuarioHistorialMedidas> mediciones = historialMedidasRepository
+            .findByPerfilUsuarioIdOrderByFechaMedicionDesc(perfil.getId());
+        
+        builder.totalMediciones(mediciones.size());
+        
+        if (!mediciones.isEmpty()) {
+            UsuarioHistorialMedidas ultimaMedicion = mediciones.get(0);
+            var pesoConvertido = UnidadesUtil.convertirDesdeKg(ultimaMedicion.getPeso(), perfil.getUnidadesMedida());
+            
+            Double imcDouble = ultimaMedicion.getImc() != null ? ultimaMedicion.getImc().doubleValue() : null;
+            String categoriaIMC = categorizarIMC(imcDouble);
+            
+            PerfilCompletoResponse.UltimaMedicionInfo medicionInfo = PerfilCompletoResponse.UltimaMedicionInfo.builder()
+                .id(ultimaMedicion.getId())
+                .peso(pesoConvertido.doubleValue())
+                .altura(ultimaMedicion.getAltura().intValue())
+                .imc(imcDouble)
+                .fechaMedicion(ultimaMedicion.getFechaMedicion())
+                .unidadPeso(perfil.getUnidadesMedida())
+                .categoriaIMC(categoriaIMC)
+                .build();
+            
+            builder.ultimaMedicion(medicionInfo);
+        }
+        
+        return builder.build();
+    }
+
+    /**
+     * Categoriza el IMC según estándares de la OMS
+     */
+    private String categorizarIMC(Double imc) {
+        if (imc == null) return "No disponible";
+        if (imc < 18.5) return "Bajo peso";
+        if (imc < 25.0) return "Peso normal";
+        if (imc < 30.0) return "Sobrepeso";
+        return "Obesidad";
+    }
+
+    /**
      * Obtener perfil de usuario por email
      */
     private PerfilUsuario obtenerPerfilPorEmail(String email) {
