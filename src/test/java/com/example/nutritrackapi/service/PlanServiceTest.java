@@ -429,7 +429,13 @@ class PlanServiceTest {
         PerfilUsuario perfil = new PerfilUsuario();
         perfil.setId(perfilUsuarioId);
         perfil.setNombre("Usuario");
-        perfil.setEtiquetasSalud(Set.of(alergiaNueces));
+        
+        // Crear UsuarioEtiquetasSalud para la relación
+        UsuarioEtiquetasSalud usuarioEtiqueta = UsuarioEtiquetasSalud.builder()
+                .perfilUsuario(perfil)
+                .etiqueta(alergiaNueces)
+                .build();
+        perfil.setEtiquetasSalud(Set.of(usuarioEtiqueta));
         
         // Crear plan con nueces (debe ser filtrado)
         Plan planConNueces = Plan.builder()
@@ -511,7 +517,13 @@ class PlanServiceTest {
         
         PerfilUsuario perfil = new PerfilUsuario();
         perfil.setId(perfilUsuarioId);
-        perfil.setEtiquetasSalud(Set.of(alergiaGluten));
+        
+        // Crear UsuarioEtiquetasSalud para la relación
+        UsuarioEtiquetasSalud usuarioEtiqueta = UsuarioEtiquetasSalud.builder()
+                .perfilUsuario(perfil)
+                .etiqueta(alergiaGluten)
+                .build();
+        perfil.setEtiquetasSalud(Set.of(usuarioEtiqueta));
         
         Plan planConGluten = Plan.builder()
                 .id(planId)
@@ -547,7 +559,13 @@ class PlanServiceTest {
         
         PerfilUsuario perfil = new PerfilUsuario();
         perfil.setId(perfilUsuarioId);
-        perfil.setEtiquetasSalud(Set.of(alergiaLactosa));
+        
+        // Crear UsuarioEtiquetasSalud para la relación
+        UsuarioEtiquetasSalud usuarioEtiqueta = UsuarioEtiquetasSalud.builder()
+                .perfilUsuario(perfil)
+                .etiqueta(alergiaLactosa)
+                .build();
+        perfil.setEtiquetasSalud(Set.of(usuarioEtiqueta));
         
         // Plan sin lactosa
         Plan planSeguro = Plan.builder()
