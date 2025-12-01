@@ -74,21 +74,12 @@ public class RegistroController {
         LocalDate hoy = LocalDate.now();
 
         // Obtener registros reales del día
-
         List<RegistroComida> registros = registroComidaRepository
                 .findByPerfilUsuarioIdAndFecha(perfilUsuarioId, hoy);
 
-        // Mapear a DTO (puedes usar mapper si ya lo tienes)
+        // Mapear a DTO usando el método estático
         List<RegistroComidaResponse> resp = registros.stream()
-                .map(r -> RegistroComidaResponse.builder()
-                        .id(r.getId())
-                        .comidaId(r.getComida().getId())
-                        .tipoComida(r.getTipoComida())
-                        .porciones(r.getPorciones())
-                        .fecha(r.getFecha())
-                        .hora(r.getHora())
-                        .notas(r.getNotas())
-                        .build())
+                .map(RegistroComidaResponse::fromEntity)
                 .toList();
 
         return ResponseEntity.ok(resp);
@@ -251,6 +242,149 @@ public class RegistroController {
         Long perfilUsuarioId = obtenerPerfilUsuarioId(authentication);
         RegistroEjercicioResponse response = registroService.obtenerRegistroEjercicio(perfilUsuarioId, registroId);
         return ResponseEntity.ok(response);
+    }
+
+    // ============================================================
+    // Progreso y Estadísticas
+    // ============================================================
+
+    @GetMapping("/ejercicios/progreso/semanal")
+    @PreAuthorize("hasRole('USER')")
+    @Operation(summary = "👤 USER - Obtener progreso semanal de ejercicios", 
+               description = """
+                   Retorna estadísticas detalladas de la semana:
+                   - Ejercicios completados vs programados
+                   - Porcentaje de cumplimiento
+                   - Calorías quemadas totales
+                   - Tiempo total de ejercicio
+                   - Desglose por día de la semana
+                   
+                   Si no se especifica fecha, usa la semana actual.
+                   """)
+    public ResponseEntity<ProgresoSemanalResponse> obtenerProgresoSemanal(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha,
+            Authentication authentication) {
+        Long perfilUsuarioId = obtenerPerfilUsuarioId(authentication);
+        LocalDate fechaReferencia = fecha != null ? fecha : LocalDate.now();
+        ProgresoSemanalResponse response = registroService.obtenerProgresoSemanal(perfilUsuarioId, fechaReferencia);
+        return ResponseEntity.ok(response);
+    }
+
+    // ============================================================
+    // Calendario de Comidas
+    // ============================================================
+
+    @GetMapping("/comidas/calendario")
+    @PreAuthorize("hasRole('USER')")
+    @Operation(summary = "👤 USER - Vista calendario de comidas", 
+               description = """
+                   Obtiene un resumen de comidas en formato calendario para un rango de fechas.
+                   Ideal para vistas semanales o mensuales.
+                   
+                   INCLUYE:
+                   - Estado de cada día (completo/incompleto)
+                   - Comidas programadas vs completadas
+                   - Resumen nutricional por día
+                   - Porcentaje de cumplimiento global
+                   
+                   PARÁMETROS:
+                   - fechaInicio: Fecha inicio del rango (por defecto: inicio de semana actual)
+                   - fechaFin: Fecha fin del rango (por defecto: fin de semana actual)
+                   """)
+    public ResponseEntity<CalendarioComidaResponse> obtenerCalendarioComidas(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaFin,
+            Authentication authentication) {
+        Long perfilUsuarioId = obtenerPerfilUsuarioId(authentication);
+        
+        // Por defecto: semana actual
+        LocalDate inicio = fechaInicio != null ? fechaInicio : LocalDate.now().with(java.time.DayOfWeek.MONDAY);
+        LocalDate fin = fechaFin != null ? fechaFin : LocalDate.now().with(java.time.DayOfWeek.SUNDAY);
+        
+        CalendarioComidaResponse response = registroService.obtenerCalendarioComidas(perfilUsuarioId, inicio, fin);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/comidas/calendario/semana")
+    @PreAuthorize("hasRole('USER')")
+    @Operation(summary = "👤 USER - Vista calendario semanal", 
+               description = "Atajo para obtener calendario de la semana que contiene la fecha especificada.")
+    public ResponseEntity<CalendarioComidaResponse> obtenerCalendarioSemanal(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha,
+            Authentication authentication) {
+        Long perfilUsuarioId = obtenerPerfilUsuarioId(authentication);
+        LocalDate referencia = fecha != null ? fecha : LocalDate.now();
+        LocalDate inicio = referencia.with(java.time.DayOfWeek.MONDAY);
+        LocalDate fin = referencia.with(java.time.DayOfWeek.SUNDAY);
+        
+        CalendarioComidaResponse response = registroService.obtenerCalendarioComidas(perfilUsuarioId, inicio, fin);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/comidas/calendario/mes")
+    @PreAuthorize("hasRole('USER')")
+    @Operation(summary = "👤 USER - Vista calendario mensual", 
+               description = "Atajo para obtener calendario del mes que contiene la fecha especificada.")
+    public ResponseEntity<CalendarioComidaResponse> obtenerCalendarioMensual(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha,
+            Authentication authentication) {
+        Long perfilUsuarioId = obtenerPerfilUsuarioId(authentication);
+        LocalDate referencia = fecha != null ? fecha : LocalDate.now();
+        LocalDate inicio = referencia.withDayOfMonth(1);
+        LocalDate fin = referencia.withDayOfMonth(referencia.lengthOfMonth());
+        
+        CalendarioComidaResponse response = registroService.obtenerCalendarioComidas(perfilUsuarioId, inicio, fin);
+        return ResponseEntity.ok(response);
+    }
+
+    // ============================================================
+    // Progreso Nutricional
+    // ============================================================
+
+    @GetMapping("/comidas/progreso/semanal")
+    @PreAuthorize("hasRole('USER')")
+    @Operation(summary = "👤 USER - Progreso nutricional semanal", 
+               description = """
+                   Obtiene el progreso nutricional semanal completo.
+                   
+                   INCLUYE:
+                   - Objetivos vs consumo de: calorías, proteínas, carbohidratos, grasas
+                   - Porcentajes de cumplimiento por nutriente
+                   - Promedios diarios
+                   - Desglose día a día
+                   - Estadísticas de comidas registradas
+                   """)
+    public ResponseEntity<ProgresoNutricionalResponse> obtenerProgresoNutricional(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha,
+            Authentication authentication) {
+        Long perfilUsuarioId = obtenerPerfilUsuarioId(authentication);
+        LocalDate fechaReferencia = fecha != null ? fecha : LocalDate.now();
+        ProgresoNutricionalResponse response = registroService.obtenerProgresoNutricional(perfilUsuarioId, fechaReferencia);
+        return ResponseEntity.ok(response);
+    }
+
+    // ============================================================
+    // Comidas Extra
+    // ============================================================
+
+    @PostMapping("/comidas/extra")
+    @PreAuthorize("hasRole('USER')")
+    @Operation(summary = "👤 USER - Registrar comida extra (no del plan)", 
+               description = """
+                   Permite registrar comidas que no estaban programadas en el plan.
+                   
+                   OPCIONES:
+                   1. Usar comida del catálogo: especificar comidaId
+                   2. Comida manual: especificar nombreComida y opcionalmente nutrientes
+                   
+                   Si se especifica nombreComida y no existe en el catálogo, se crea automáticamente.
+                   """)
+    public ResponseEntity<RegistroComidaResponse> registrarComidaExtra(
+            @Valid @RequestBody RegistroComidaExtraRequest request,
+            Authentication authentication) {
+        Long perfilUsuarioId = obtenerPerfilUsuarioId(authentication);
+        RegistroComidaResponse response = registroService.registrarComidaExtra(perfilUsuarioId, request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     // ============================================================

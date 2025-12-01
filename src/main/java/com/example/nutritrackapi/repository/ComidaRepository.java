@@ -27,6 +27,11 @@ public interface ComidaRepository extends JpaRepository<Comida, Long> {
     Optional<Comida> findByNombre(String nombre);
 
     /**
+     * Busca comida por nombre (case-insensitive)
+     */
+    Optional<Comida> findByNombreIgnoreCase(String nombre);
+
+    /**
      * Busca comidas por ID de tipo de comida
      */
     Page<Comida> findByTipoComidaId(Long tipoComidaId, Pageable pageable);

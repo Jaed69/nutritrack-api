@@ -11,6 +11,9 @@ import java.time.LocalTime;
 /**
  * Entidad que representa el registro de una comida consumida por el usuario.
  * Módulo 5: US-22 - Marcar Actividad como Completada
+ * 
+ * MIGRACIÓN: tipoComida ahora es una relación @ManyToOne a TipoComidaEntity
+ * para permitir tipos de comida dinámicos.
  */
 @Entity
 @Table(name = "registros_comidas")
@@ -42,9 +45,13 @@ public class RegistroComida {
     @Column(nullable = false)
     private LocalTime hora;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "tipo_comida", nullable = false, length = 20)
-    private TipoComida tipoComida;
+    /**
+     * Tipo de comida - Relación con tabla maestra tipos_comida
+     * Permite gestionar tipos de comida dinámicamente
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_tipo_comida")
+    private TipoComidaEntity tipoComida;
 
     @Column(precision = 5, scale = 2)
     private BigDecimal porciones;
@@ -67,18 +74,5 @@ public class RegistroComida {
         if (hora == null) {
             hora = LocalTime.now();
         }
-    }
-
-    /**
-     * Tipos de comida
-     */
-    public enum TipoComida {
-        DESAYUNO,
-        ALMUERZO,
-        CENA,
-        SNACK,
-        PRE_ENTRENAMIENTO,
-        POST_ENTRENAMIENTO,
-        COLACION
     }
 }

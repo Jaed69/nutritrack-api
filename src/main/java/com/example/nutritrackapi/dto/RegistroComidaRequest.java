@@ -1,6 +1,5 @@
 package com.example.nutritrackapi.dto;
 
-import com.example.nutritrackapi.model.RegistroComida;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
@@ -14,6 +13,9 @@ import java.time.LocalTime;
 /**
  * DTO de request para registrar una comida.
  * Módulo 5: US-22 - Marcar Actividad como Completada
+ * 
+ * Nota: tipoComida puede enviarse como ID o como nombre (String)
+ * para mayor flexibilidad con el frontend.
  */
 @Data
 @NoArgsConstructor
@@ -35,13 +37,14 @@ public class RegistroComidaRequest {
     @Schema(description = "Hora de la comida (HH:mm:ss)", example = "13:30:00")
     private LocalTime hora;
 
-    @NotNull(message = "El tipo de comida es obligatorio")
-    @Schema(description = "Tipo de comida", example = "ALMUERZO", required = true,
-            allowableValues = {"DESAYUNO", "ALMUERZO", "CENA", "SNACK", "PRE_ENTRENAMIENTO", "POST_ENTRENAMIENTO", "COLACION"})
-    private RegistroComida.TipoComida tipoComida;
+    @Schema(description = "ID del tipo de comida (opcional si se envía tipoComidaNombre)", example = "2")
+    private Long tipoComidaId;
 
-    @Positive(message = "Las porciones deben ser un número positivo")
-    @Schema(description = "Número de porciones consumidas", example = "1.0")
+    @Schema(description = "Nombre del tipo de comida (DESAYUNO, ALMUERZO, etc.)", example = "ALMUERZO")
+    private String tipoComidaNombre;
+
+    @DecimalMin(value = "0.1", message = "Las porciones deben ser al menos 0.1")
+    @Schema(description = "Número de porciones consumidas (mínimo 0.1)", example = "1.0")
     private BigDecimal porciones;
 
     @Size(max = 500, message = "Las notas no pueden exceder 500 caracteres")

@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.Collections;
@@ -35,6 +36,7 @@ public class RegistroService {
     private final UsuarioRutinaRepository usuarioRutinaRepository;
     private final PlanDiaRepository planDiaRepository;
     private final RutinaEjercicioRepository rutinaEjercicioRepository;
+    private final TipoComidaRepository tipoComidaRepository;
 
     // ============================================================
     // US-22: Registrar Comida
@@ -68,6 +70,9 @@ public class RegistroService {
             }
         }
 
+        // Resolver tipo de comida (por ID o por nombre)
+        TipoComidaEntity tipoComida = resolverTipoComidaParaRegistro(request);
+
         // Calcular calorías consumidas (RN25: Cálculo automático)
         // TODO: Implementar cálculo de calorías sumando ingredientes
         BigDecimal porciones = request.getPorciones() != null ? request.getPorciones() : BigDecimal.ONE;
@@ -80,7 +85,7 @@ public class RegistroService {
                 .usuarioPlan(usuarioPlan)
                 .fecha(request.getFecha() != null ? request.getFecha() : LocalDate.now())
                 .hora(request.getHora() != null ? request.getHora() : LocalTime.now())
-                .tipoComida(request.getTipoComida())
+                .tipoComida(tipoComida)
                 .porciones(porciones)
                 .caloriasConsumidas(caloriasConsumidas)
                 .notas(request.getNotas())
@@ -90,6 +95,24 @@ public class RegistroService {
         log.info("Comida registrada exitosamente con ID {}", registro.getId());
 
         return RegistroComidaResponse.fromEntity(registro);
+    }
+
+    /**
+     * Resuelve el tipo de comida para el registro, buscando por ID o por nombre.
+     */
+    private TipoComidaEntity resolverTipoComidaParaRegistro(RegistroComidaRequest request) {
+        if (request.getTipoComidaId() != null) {
+            return tipoComidaRepository.findById(request.getTipoComidaId())
+                    .orElseThrow(() -> new EntityNotFoundException("Tipo de comida no encontrado con ID: " + request.getTipoComidaId()));
+        }
+        
+        if (request.getTipoComidaNombre() != null && !request.getTipoComidaNombre().isBlank()) {
+            return tipoComidaRepository.findByNombreIgnoreCase(request.getTipoComidaNombre())
+                    .orElseThrow(() -> new EntityNotFoundException("Tipo de comida no encontrado: " + request.getTipoComidaNombre()));
+        }
+        
+        // Si no se especifica tipo, intentar usar el tipo de la comida del catálogo
+        return null; // Permitir null si no se especifica
     }
 
     public RegistroComidaResponse actualizarRegistroComida(
@@ -104,7 +127,12 @@ public class RegistroService {
         registro.setHora(request.getHora());
         registro.setPorciones(request.getPorciones());
         registro.setNotas(request.getNotas());
-        registro.setTipoComida(request.getTipoComida());
+        
+        // Resolver tipo de comida
+        TipoComidaEntity tipoComida = resolverTipoComidaParaRegistro(request);
+        if (tipoComida != null) {
+            registro.setTipoComida(tipoComida);
+        }
 
         registroComidaRepository.save(registro);
 
@@ -127,6 +155,13 @@ public class RegistroService {
         Ejercicio ejercicio = ejercicioRepository.findById(request.getEjercicioId())
                 .orElseThrow(() -> new EntityNotFoundException("Ejercicio no encontrado"));
 
+        // Validar que no exista un registro duplicado para el mismo ejercicio el mismo día
+        LocalDate fechaRegistro = request.getFecha() != null ? request.getFecha() : LocalDate.now();
+        if (registroEjercicioRepository.existsByPerfilUsuarioIdAndEjercicioIdAndFecha(
+                perfilUsuarioId, request.getEjercicioId(), fechaRegistro)) {
+            throw new BusinessException("Ya existe un registro de este ejercicio para el día " + fechaRegistro);
+        }
+
         // Si se especifica una rutina, validar que esté activa (RN21)
         UsuarioRutina usuarioRutina = null;
         if (request.getUsuarioRutinaId() != null) {
@@ -143,16 +178,15 @@ public class RegistroService {
             }
         }
 
-        // Estimar calorías quemadas (simplificado)
-        // TODO: Implementar cálculo basado en ejercicio y duración
-        BigDecimal caloriasQuemadas = BigDecimal.ZERO;
+        // Calcular calorías quemadas automáticamente
+        BigDecimal caloriasQuemadas = calcularCaloriasQuemadas(ejercicio, request);
 
         // Crear registro
         RegistroEjercicio registro = RegistroEjercicio.builder()
                 .perfilUsuario(perfil)
                 .ejercicio(ejercicio)
                 .usuarioRutina(usuarioRutina)
-                .fecha(request.getFecha() != null ? request.getFecha() : LocalDate.now())
+                .fecha(fechaRegistro)
                 .hora(request.getHora() != null ? request.getHora() : LocalTime.now())
                 .seriesRealizadas(request.getSeries())
                 .repeticionesRealizadas(request.getRepeticiones())
@@ -176,6 +210,10 @@ public class RegistroService {
     public ActividadesDiaResponse obtenerActividadesDia(Long perfilUsuarioId, LocalDate fecha) {
         log.info("Obteniendo actividades del día {} para usuario {}", fecha, perfilUsuarioId);
 
+        // Obtener el día de la semana (1=Lunes, 7=Domingo)
+        int diaSemana = fecha.getDayOfWeek().getValue();
+        String nombreDia = obtenerNombreDia(diaSemana);
+
         // Intentar obtener plan activo
         var optionalPlan = usuarioPlanRepository.findPlanActivoActual(perfilUsuarioId);
 
@@ -183,63 +221,223 @@ public class RegistroService {
             // 👉 No hay plan activo: devolvemos respuesta "vacía", SIN lanzar 404
             return ActividadesDiaResponse.builder()
                     .fecha(fecha)
+                    .diaSemana(diaSemana)
+                    .nombreDia(nombreDia)
                     .diaActual(0)
+                    .diaPlan(0)
+                    .duracionDias(0)
+                    .nombrePlan(null)
                     .caloriasObjetivo(BigDecimal.ZERO)
+                    .proteinasObjetivo(BigDecimal.ZERO)
+                    .carbohidratosObjetivo(BigDecimal.ZERO)
+                    .grasasObjetivo(BigDecimal.ZERO)
                     .caloriasConsumidas(BigDecimal.ZERO)
+                    .proteinasConsumidas(BigDecimal.ZERO)
+                    .carbohidratosConsumidos(BigDecimal.ZERO)
+                    .grasasConsumidas(BigDecimal.ZERO)
+                    .caloriasPlanificadas(BigDecimal.ZERO)
+                    .proteinasPlanificadas(BigDecimal.ZERO)
+                    .carbohidratosPlanificados(BigDecimal.ZERO)
+                    .grasasPlanificadas(BigDecimal.ZERO)
                     .comidas(Collections.emptyList())
                     .build();
         }
 
         UsuarioPlan planActivo = optionalPlan.get();
+        Plan plan = planActivo.getPlan();
 
-        // Calcular día actual del plan
+        // Calcular día actual desde el inicio del plan
         long diasDesdeInicio = java.time.temporal.ChronoUnit.DAYS
                 .between(planActivo.getFechaInicio(), fecha);
         int diaActual = (int) diasDesdeInicio + 1;
 
-        // Obtener comidas programadas para ese día
+        // Calcular día del plan (cíclico si excede la duración)
+        int duracionDias = plan.getDuracionDias() != null ? plan.getDuracionDias() : 1;
+        int diaPlan;
+        if (diaActual <= duracionDias) {
+            diaPlan = diaActual;
+        } else {
+            // Plan cíclico: día 31 de plan de 30 días = día 1, día 32 = día 2, etc.
+            diaPlan = ((diaActual - 1) % duracionDias) + 1;
+        }
+        log.info("Día actual: {}, Duración plan: {}, Día del plan (cíclico): {}", diaActual, duracionDias, diaPlan);
+
+        // Obtener comidas programadas para ese día del plan
         List<PlanDia> comidasDelDia = planDiaRepository
-                .findByPlanIdAndNumeroDia(planActivo.getPlan().getId(), diaActual);
+                .findByPlanIdAndNumeroDia(plan.getId(), diaPlan);
+
+        log.info("Comidas encontradas para día {} del plan: {}", diaPlan, comidasDelDia.size());
 
         // Obtener registros de comidas del día
         List<RegistroComida> registros = registroComidaRepository
                 .findByPerfilUsuarioIdAndFecha(perfilUsuarioId, fecha);
 
-        List<ActividadesDiaResponse.ComidaDiaInfo> comidas = comidasDelDia.stream()
-                .map(planDia -> {
-                    RegistroComida registro = registros.stream()
-                            .filter(r -> r.getComida().getId().equals(planDia.getComida().getId()))
-                            .findFirst()
-                            .orElse(null);
+        // Acumuladores para totales planificados
+        BigDecimal totalCaloriasPlan = BigDecimal.ZERO;
+        BigDecimal totalProteinasPlan = BigDecimal.ZERO;
+        BigDecimal totalCarbosPlan = BigDecimal.ZERO;
+        BigDecimal totalGrasasPlan = BigDecimal.ZERO;
 
-                    BigDecimal caloriasComida = BigDecimal.ZERO; // TODO
+        // Mapear comidas con información nutricional completa
+        List<ActividadesDiaResponse.ComidaDiaInfo> comidas = new java.util.ArrayList<>();
+        
+        for (PlanDia planDia : comidasDelDia) {
+            Comida comida = planDia.getComida();
+            
+            // Calcular macros de la comida basándose en sus ingredientes
+            NutricionComida nutricion = calcularNutricionComida(comida);
+            
+            // Acumular totales planificados
+            totalCaloriasPlan = totalCaloriasPlan.add(nutricion.calorias);
+            totalProteinasPlan = totalProteinasPlan.add(nutricion.proteinas);
+            totalCarbosPlan = totalCarbosPlan.add(nutricion.carbohidratos);
+            totalGrasasPlan = totalGrasasPlan.add(nutricion.grasas);
+            
+            // Verificar si está registrada
+            RegistroComida registro = registros.stream()
+                    .filter(r -> r.getComida().getId().equals(comida.getId()))
+                    .findFirst()
+                    .orElse(null);
+            
+            // Mapear ingredientes
+            List<ActividadesDiaResponse.IngredienteInfo> ingredientesInfo = 
+                    comida.getComidaIngredientes().stream()
+                            .map(ci -> {
+                                Ingrediente ing = ci.getIngrediente();
+                                BigDecimal cantidad = ci.getCantidadGramos();
+                                BigDecimal factor = cantidad.divide(new BigDecimal("100"), 4, RoundingMode.HALF_UP);
+                                
+                                return ActividadesDiaResponse.IngredienteInfo.builder()
+                                        .ingredienteId(ing.getId())
+                                        .nombre(ing.getNombre())
+                                        .cantidadGramos(cantidad)
+                                        .calorias(ing.getEnergia().multiply(factor).setScale(2, RoundingMode.HALF_UP))
+                                        .proteinas(ing.getProteinas().multiply(factor).setScale(2, RoundingMode.HALF_UP))
+                                        .carbohidratos(ing.getCarbohidratos().multiply(factor).setScale(2, RoundingMode.HALF_UP))
+                                        .grasas(ing.getGrasas().multiply(factor).setScale(2, RoundingMode.HALF_UP))
+                                        .notas(ci.getNotas())
+                                        .build();
+                            })
+                            .collect(Collectors.toList());
+            
+            comidas.add(ActividadesDiaResponse.ComidaDiaInfo.builder()
+                    .comidaId(comida.getId())
+                    .nombre(comida.getNombre())
+                    .tipoComida(planDia.getTipoComida() != null ? planDia.getTipoComida().getNombre() : null)
+                    .tipoComidaId(planDia.getTipoComida() != null ? planDia.getTipoComida().getId() : null)
+                    .calorias(nutricion.calorias)
+                    .proteinas(nutricion.proteinas)
+                    .carbohidratos(nutricion.carbohidratos)
+                    .grasas(nutricion.grasas)
+                    .descripcion(comida.getDescripcion())
+                    .tiempoPreparacionMinutos(comida.getTiempoPreparacionMinutos())
+                    .porciones(comida.getPorciones())
+                    .notas(planDia.getNotas())
+                    .registrada(registro != null)
+                    .registroId(registro != null ? registro.getId() : null)
+                    .ingredientes(ingredientesInfo)
+                    .build());
+        }
 
-                    return new ActividadesDiaResponse.ComidaDiaInfo(
-                            planDia.getComida().getId(),
-                            planDia.getComida().getNombre(),
-                            planDia.getTipoComida() != null ? planDia.getTipoComida().getNombre() : null,
-                            caloriasComida,
-                            registro != null,
-                            registro != null ? registro.getId() : null
-                    );
-                })
-                .collect(Collectors.toList());
+        // Calcular consumo del día (de los registros)
+        BigDecimal caloriasConsumidas = BigDecimal.ZERO;
+        BigDecimal proteinasConsumidas = BigDecimal.ZERO;
+        BigDecimal carbohidratosConsumidos = BigDecimal.ZERO;
+        BigDecimal grasasConsumidas = BigDecimal.ZERO;
+        
+        for (RegistroComida registro : registros) {
+            BigDecimal porciones = registro.getPorciones() != null ? registro.getPorciones() : BigDecimal.ONE;
+            NutricionComida nutricionRegistro = calcularNutricionComida(registro.getComida());
+            
+            caloriasConsumidas = caloriasConsumidas.add(nutricionRegistro.calorias.multiply(porciones));
+            proteinasConsumidas = proteinasConsumidas.add(nutricionRegistro.proteinas.multiply(porciones));
+            carbohidratosConsumidos = carbohidratosConsumidos.add(nutricionRegistro.carbohidratos.multiply(porciones));
+            grasasConsumidas = grasasConsumidas.add(nutricionRegistro.grasas.multiply(porciones));
+        }
 
-        BigDecimal caloriasConsumidas = registros.stream()
-                .map(RegistroComida::getCaloriasConsumidas)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        BigDecimal caloriasObjetivo = planActivo.getPlan().getObjetivo() != null
-                ? planActivo.getPlan().getObjetivo().getCaloriasObjetivo()
+        // Obtener objetivos del plan
+        BigDecimal caloriasObjetivo = plan.getObjetivo() != null && plan.getObjetivo().getCaloriasObjetivo() != null
+                ? plan.getObjetivo().getCaloriasObjetivo()
+                : BigDecimal.ZERO;
+        BigDecimal proteinasObjetivo = plan.getObjetivo() != null && plan.getObjetivo().getProteinasObjetivo() != null
+                ? plan.getObjetivo().getProteinasObjetivo()
+                : BigDecimal.ZERO;
+        BigDecimal carbohidratosObjetivo = plan.getObjetivo() != null && plan.getObjetivo().getCarbohidratosObjetivo() != null
+                ? plan.getObjetivo().getCarbohidratosObjetivo()
+                : BigDecimal.ZERO;
+        BigDecimal grasasObjetivo = plan.getObjetivo() != null && plan.getObjetivo().getGrasasObjetivo() != null
+                ? plan.getObjetivo().getGrasasObjetivo()
                 : BigDecimal.ZERO;
 
         return ActividadesDiaResponse.builder()
                 .fecha(fecha)
+                .diaSemana(diaSemana)
+                .nombreDia(nombreDia)
                 .diaActual(diaActual)
+                .diaPlan(diaPlan)
+                .duracionDias(duracionDias)
+                .nombrePlan(plan.getNombre())
                 .caloriasObjetivo(caloriasObjetivo)
-                .caloriasConsumidas(caloriasConsumidas)
+                .proteinasObjetivo(proteinasObjetivo)
+                .carbohidratosObjetivo(carbohidratosObjetivo)
+                .grasasObjetivo(grasasObjetivo)
+                .caloriasConsumidas(caloriasConsumidas.setScale(2, RoundingMode.HALF_UP))
+                .proteinasConsumidas(proteinasConsumidas.setScale(2, RoundingMode.HALF_UP))
+                .carbohidratosConsumidos(carbohidratosConsumidos.setScale(2, RoundingMode.HALF_UP))
+                .grasasConsumidas(grasasConsumidas.setScale(2, RoundingMode.HALF_UP))
+                .caloriasPlanificadas(totalCaloriasPlan.setScale(2, RoundingMode.HALF_UP))
+                .proteinasPlanificadas(totalProteinasPlan.setScale(2, RoundingMode.HALF_UP))
+                .carbohidratosPlanificados(totalCarbosPlan.setScale(2, RoundingMode.HALF_UP))
+                .grasasPlanificadas(totalGrasasPlan.setScale(2, RoundingMode.HALF_UP))
                 .comidas(comidas)
                 .build();
+    }
+
+    /**
+     * Clase interna para encapsular información nutricional de una comida.
+     */
+    private static class NutricionComida {
+        BigDecimal calorias = BigDecimal.ZERO;
+        BigDecimal proteinas = BigDecimal.ZERO;
+        BigDecimal carbohidratos = BigDecimal.ZERO;
+        BigDecimal grasas = BigDecimal.ZERO;
+    }
+
+    /**
+     * Calcula la información nutricional total de una comida sumando sus ingredientes.
+     * Los valores nutricionales de los ingredientes están por 100g, se ajustan según cantidad.
+     */
+    private NutricionComida calcularNutricionComida(Comida comida) {
+        NutricionComida nutricion = new NutricionComida();
+        
+        if (comida.getComidaIngredientes() == null || comida.getComidaIngredientes().isEmpty()) {
+            return nutricion;
+        }
+        
+        for (ComidaIngrediente ci : comida.getComidaIngredientes()) {
+            Ingrediente ingrediente = ci.getIngrediente();
+            BigDecimal cantidadGramos = ci.getCantidadGramos();
+            
+            // Valores nutricionales están por 100g, calculamos proporción
+            BigDecimal factor = cantidadGramos.divide(new BigDecimal("100"), 4, RoundingMode.HALF_UP);
+            
+            nutricion.calorias = nutricion.calorias.add(
+                    ingrediente.getEnergia().multiply(factor));
+            nutricion.proteinas = nutricion.proteinas.add(
+                    ingrediente.getProteinas().multiply(factor));
+            nutricion.carbohidratos = nutricion.carbohidratos.add(
+                    ingrediente.getCarbohidratos().multiply(factor));
+            nutricion.grasas = nutricion.grasas.add(
+                    ingrediente.getGrasas().multiply(factor));
+        }
+        
+        // Redondear a 2 decimales
+        nutricion.calorias = nutricion.calorias.setScale(2, RoundingMode.HALF_UP);
+        nutricion.proteinas = nutricion.proteinas.setScale(2, RoundingMode.HALF_UP);
+        nutricion.carbohidratos = nutricion.carbohidratos.setScale(2, RoundingMode.HALF_UP);
+        nutricion.grasas = nutricion.grasas.setScale(2, RoundingMode.HALF_UP);
+        
+        return nutricion;
     }
 
     // ============================================================
@@ -254,13 +452,33 @@ public class RegistroService {
         UsuarioRutina rutinaActiva = usuarioRutinaRepository.findRutinaActivaActual(perfilUsuarioId)
                 .orElseThrow(() -> new EntityNotFoundException("No hay rutina activa"));
 
-        // Calcular semana actual
+        // Calcular semana actual desde el inicio de la rutina
         long semanasDesdeInicio = java.time.temporal.ChronoUnit.WEEKS.between(rutinaActiva.getFechaInicio(), fecha);
         int semanaActual = (int) semanasDesdeInicio + 1;
 
-        // Obtener ejercicios programados
+        // Obtener el día de la semana (1=Lunes, 7=Domingo)
+        int diaSemana = fecha.getDayOfWeek().getValue();
+        log.info("Día de la semana: {} (1=Lunes, 7=Domingo), Semana actual: {}", diaSemana, semanaActual);
+
+        // Calcular la semana base del patrón (si la rutina tiene patrón de semanas)
+        Integer patronSemanas = rutinaActiva.getRutina().getPatronSemanas();
+        int semanaBase = 1;
+        if (patronSemanas != null && patronSemanas > 0) {
+            // La semana base es cíclica: semana 1, 2, ..., patronSemanas, 1, 2, ...
+            semanaBase = ((semanaActual - 1) % patronSemanas) + 1;
+        }
+        log.info("Patrón de semanas: {}, Semana base calculada: {}", patronSemanas, semanaBase);
+
+        // Obtener SOLO los ejercicios programados para este día y semana base
+        final int finalSemanaBase = semanaBase;
         List<RutinaEjercicio> ejerciciosRutina = rutinaEjercicioRepository
-                .findByRutinaIdOrderBySemanaBaseAscDiaSemanaAscOrdenAsc(rutinaActiva.getRutina().getId());
+                .findByRutinaIdOrderBySemanaBaseAscDiaSemanaAscOrdenAsc(rutinaActiva.getRutina().getId())
+                .stream()
+                .filter(re -> re.getDiaSemana().equals(diaSemana))
+                .filter(re -> re.getSemanaBase().equals(finalSemanaBase))
+                .collect(Collectors.toList());
+
+        log.info("Ejercicios encontrados para día {} semana base {}: {}", diaSemana, semanaBase, ejerciciosRutina.size());
         
         // Obtener registros del día
         List<RegistroEjercicio> registros = registroEjercicioRepository
@@ -281,17 +499,41 @@ public class RegistroService {
                             .repeticionesObjetivo(re.getRepeticiones())
                             .pesoSugerido(re.getPeso())
                             .duracionMinutos(re.getDuracionMinutos())
+                            .descansoSegundos(re.getDescansoSegundos())
+                            .notas(re.getNotas())
                             .registrado(registro != null)
                             .registroId(registro != null ? registro.getId() : null)
                             .build();
                 })
                 .collect(Collectors.toList());
 
+        // Obtener nombre del día en español
+        String nombreDia = obtenerNombreDia(diaSemana);
+
         return EjerciciosDiaResponse.builder()
                 .fecha(fecha)
+                .diaSemana(diaSemana)
+                .nombreDia(nombreDia)
                 .semanaActual(semanaActual)
+                .semanaBase(semanaBase)
                 .ejercicios(ejercicios)
                 .build();
+    }
+
+    /**
+     * Obtiene el nombre del día de la semana en español.
+     */
+    private String obtenerNombreDia(int diaSemana) {
+        return switch (diaSemana) {
+            case 1 -> "Lunes";
+            case 2 -> "Martes";
+            case 3 -> "Miércoles";
+            case 4 -> "Jueves";
+            case 5 -> "Viernes";
+            case 6 -> "Sábado";
+            case 7 -> "Domingo";
+            default -> "Desconocido";
+        };
     }
 
     // ============================================================
@@ -382,5 +624,579 @@ public class RegistroService {
         }
 
         return RegistroEjercicioResponse.fromEntity(registro);
+    }
+
+    // ============================================================
+    // Progreso Semanal de Ejercicios
+    // ============================================================
+
+    /**
+     * Obtiene el progreso semanal de ejercicios del usuario.
+     * Incluye estadísticas de ejercicios completados, calorías quemadas y tiempo total.
+     */
+    @Transactional(readOnly = true)
+    public ProgresoSemanalResponse obtenerProgresoSemanal(Long perfilUsuarioId, LocalDate fechaReferencia) {
+        log.info("Obteniendo progreso semanal para usuario {} con fecha de referencia {}", perfilUsuarioId, fechaReferencia);
+
+        // Calcular inicio y fin de la semana (lunes a domingo)
+        LocalDate inicioSemana = fechaReferencia.with(java.time.DayOfWeek.MONDAY);
+        LocalDate finSemana = fechaReferencia.with(java.time.DayOfWeek.SUNDAY);
+
+        // Obtener todos los registros de ejercicios de la semana
+        List<RegistroEjercicio> registrosSemana = registroEjercicioRepository
+                .findByPerfilUsuarioIdAndFechaBetween(perfilUsuarioId, inicioSemana, finSemana);
+
+        // Calcular estadísticas
+        int ejerciciosCompletados = registrosSemana.size();
+        
+        BigDecimal caloriasQuemadasTotal = registrosSemana.stream()
+                .map(RegistroEjercicio::getCaloriasQuemadas)
+                .filter(cal -> cal != null)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        int tiempoTotalMinutos = registrosSemana.stream()
+                .map(RegistroEjercicio::getDuracionMinutos)
+                .filter(dur -> dur != null)
+                .mapToInt(Integer::intValue)
+                .sum();
+
+        // Agrupar por día de la semana
+        List<ProgresoSemanalResponse.DiaSemanaInfo> diasSemana = java.util.stream.Stream
+                .iterate(inicioSemana, d -> d.plusDays(1))
+                .limit(7)
+                .map(dia -> {
+                    List<RegistroEjercicio> registrosDia = registrosSemana.stream()
+                            .filter(r -> r.getFecha().equals(dia))
+                            .collect(Collectors.toList());
+
+                    int ejerciciosDia = registrosDia.size();
+                    BigDecimal caloriasDia = registrosDia.stream()
+                            .map(RegistroEjercicio::getCaloriasQuemadas)
+                            .filter(cal -> cal != null)
+                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                    int tiempoDia = registrosDia.stream()
+                            .map(RegistroEjercicio::getDuracionMinutos)
+                            .filter(dur -> dur != null)
+                            .mapToInt(Integer::intValue)
+                            .sum();
+
+                    return ProgresoSemanalResponse.DiaSemanaInfo.builder()
+                            .fecha(dia)
+                            .diaSemana(dia.getDayOfWeek().toString())
+                            .ejerciciosCompletados(ejerciciosDia)
+                            .caloriasQuemadas(caloriasDia)
+                            .tiempoMinutos(tiempoDia)
+                            .build();
+                })
+                .collect(Collectors.toList());
+
+        // Obtener rutina activa para calcular porcentaje de cumplimiento
+        int ejerciciosProgramados = 0;
+        var rutinaActiva = usuarioRutinaRepository.findRutinaActivaActual(perfilUsuarioId);
+        if (rutinaActiva.isPresent()) {
+            // Contar ejercicios programados para la semana
+            ejerciciosProgramados = rutinaEjercicioRepository
+                    .findByRutinaIdOrderBySemanaBaseAscDiaSemanaAscOrdenAsc(rutinaActiva.get().getRutina().getId())
+                    .size();
+        }
+
+        double porcentajeCumplimiento = ejerciciosProgramados > 0 
+                ? (double) ejerciciosCompletados / ejerciciosProgramados * 100 
+                : 0;
+
+        return ProgresoSemanalResponse.builder()
+                .inicioSemana(inicioSemana)
+                .finSemana(finSemana)
+                .ejerciciosCompletados(ejerciciosCompletados)
+                .ejerciciosProgramados(ejerciciosProgramados)
+                .porcentajeCumplimiento(Math.min(porcentajeCumplimiento, 100)) // Máximo 100%
+                .caloriasQuemadasTotal(caloriasQuemadasTotal)
+                .tiempoTotalMinutos(tiempoTotalMinutos)
+                .diasSemana(diasSemana)
+                .build();
+    }
+
+    // ============================================================
+    // Métodos auxiliares privados
+    // ============================================================
+
+    /**
+     * Calcula las calorías quemadas basándose en el ejercicio y los parámetros del registro.
+     * Fórmula: calorías = caloriasQuemadasPorMinuto × duración
+     * Si no hay duración, estima basándose en series y repeticiones.
+     */
+    private BigDecimal calcularCaloriasQuemadas(Ejercicio ejercicio, RegistroEjercicioRequest request) {
+        BigDecimal caloriasPorMinuto = ejercicio.getCaloriasQuemadasPorMinuto();
+        
+        // Si el ejercicio no tiene calorías definidas, usar valor por defecto según tipo
+        if (caloriasPorMinuto == null || caloriasPorMinuto.compareTo(BigDecimal.ZERO) == 0) {
+            caloriasPorMinuto = estimarCaloriasPorMinuto(ejercicio.getTipoEjercicio());
+        }
+
+        // Calcular duración
+        Integer duracion = request.getDuracionMinutos();
+        if (duracion == null || duracion == 0) {
+            // Estimar duración basándose en series y repeticiones
+            // Estimación: cada serie toma aproximadamente 1-2 minutos (incluyendo descanso)
+            Integer series = request.getSeries() != null ? request.getSeries() : 1;
+            duracion = series * 2; // 2 minutos por serie aproximadamente
+        }
+
+        return caloriasPorMinuto.multiply(BigDecimal.valueOf(duracion));
+    }
+
+    /**
+     * Estima calorías por minuto según el tipo de ejercicio.
+     */
+    private BigDecimal estimarCaloriasPorMinuto(Ejercicio.TipoEjercicio tipo) {
+        if (tipo == null) {
+            return new BigDecimal("5.0"); // Valor por defecto
+        }
+        
+        return switch (tipo) {
+            case CARDIO -> new BigDecimal("10.0");
+            case HIIT -> new BigDecimal("12.0");
+            case FUERZA -> new BigDecimal("6.0");
+            case FUNCIONAL -> new BigDecimal("8.0");
+            case YOGA, PILATES -> new BigDecimal("3.0");
+            case FLEXIBILIDAD -> new BigDecimal("2.5");
+            case EQUILIBRIO -> new BigDecimal("3.0");
+            case DEPORTIVO -> new BigDecimal("9.0");
+            case REHABILITACION -> new BigDecimal("2.0");
+            case OTRO -> new BigDecimal("5.0");
+        };
+    }
+
+    // ============================================================
+    // Calendario de Comidas
+    // ============================================================
+
+    /**
+     * Obtiene el calendario de comidas para un rango de fechas.
+     * Ideal para vistas semanales o mensuales.
+     */
+    @Transactional(readOnly = true)
+    public CalendarioComidaResponse obtenerCalendarioComidas(Long perfilUsuarioId, LocalDate fechaInicio, LocalDate fechaFin) {
+        log.info("Obteniendo calendario de comidas para usuario {} desde {} hasta {}", 
+                perfilUsuarioId, fechaInicio, fechaFin);
+
+        // Verificar si hay plan activo
+        var optionalPlan = usuarioPlanRepository.findPlanActivoActual(perfilUsuarioId);
+        
+        if (optionalPlan.isEmpty()) {
+            return CalendarioComidaResponse.builder()
+                    .fechaInicio(fechaInicio)
+                    .fechaFin(fechaFin)
+                    .nombrePlan(null)
+                    .duracionPlanDias(0)
+                    .diasConRegistros(0)
+                    .totalComidasProgramadas(0)
+                    .totalComidasCompletadas(0)
+                    .porcentajeCumplimiento(BigDecimal.ZERO)
+                    .caloriasConsumidasTotal(BigDecimal.ZERO)
+                    .proteinasConsumidasTotal(BigDecimal.ZERO)
+                    .carbohidratosConsumidosTotal(BigDecimal.ZERO)
+                    .grasasConsumidasTotal(BigDecimal.ZERO)
+                    .dias(Collections.emptyList())
+                    .build();
+        }
+
+        UsuarioPlan planActivo = optionalPlan.get();
+        Plan plan = planActivo.getPlan();
+        int duracionDias = plan.getDuracionDias() != null ? plan.getDuracionDias() : 1;
+
+        // Acumuladores
+        int totalComidasProgramadas = 0;
+        int totalComidasCompletadas = 0;
+        int diasConRegistros = 0;
+        BigDecimal totalCalorias = BigDecimal.ZERO;
+        BigDecimal totalProteinas = BigDecimal.ZERO;
+        BigDecimal totalCarbos = BigDecimal.ZERO;
+        BigDecimal totalGrasas = BigDecimal.ZERO;
+
+        // Generar lista de días
+        List<CalendarioComidaResponse.DiaCalendario> dias = new java.util.ArrayList<>();
+        
+        LocalDate fechaActual = fechaInicio;
+        while (!fechaActual.isAfter(fechaFin)) {
+            final LocalDate fecha = fechaActual;
+            
+            // Calcular día del plan
+            long diasDesdeInicio = java.time.temporal.ChronoUnit.DAYS.between(planActivo.getFechaInicio(), fecha);
+            int diaActual = (int) diasDesdeInicio + 1;
+            int diaPlan = diaActual <= duracionDias ? diaActual : ((diaActual - 1) % duracionDias) + 1;
+            
+            // Obtener comidas del día
+            List<PlanDia> comidasDelDia = planDiaRepository.findByPlanIdAndNumeroDia(plan.getId(), diaPlan);
+            List<RegistroComida> registrosDelDia = registroComidaRepository
+                    .findByPerfilUsuarioIdAndFecha(perfilUsuarioId, fecha);
+            
+            int comidasProgramadasDia = comidasDelDia.size();
+            int comidasCompletadasDia = 0;
+            BigDecimal caloriasDia = BigDecimal.ZERO;
+            BigDecimal proteinasDia = BigDecimal.ZERO;
+            BigDecimal carbosDia = BigDecimal.ZERO;
+            BigDecimal grasasDia = BigDecimal.ZERO;
+            
+            // Mapear comidas
+            List<CalendarioComidaResponse.ComidaResumen> comidasResumen = new java.util.ArrayList<>();
+            for (PlanDia planDia : comidasDelDia) {
+                Comida comida = planDia.getComida();
+                NutricionComida nutricion = calcularNutricionComida(comida);
+                
+                RegistroComida registro = registrosDelDia.stream()
+                        .filter(r -> r.getComida().getId().equals(comida.getId()))
+                        .findFirst()
+                        .orElse(null);
+                
+                if (registro != null) {
+                    comidasCompletadasDia++;
+                    BigDecimal porciones = registro.getPorciones() != null ? registro.getPorciones() : BigDecimal.ONE;
+                    caloriasDia = caloriasDia.add(nutricion.calorias.multiply(porciones));
+                    proteinasDia = proteinasDia.add(nutricion.proteinas.multiply(porciones));
+                    carbosDia = carbosDia.add(nutricion.carbohidratos.multiply(porciones));
+                    grasasDia = grasasDia.add(nutricion.grasas.multiply(porciones));
+                }
+                
+                comidasResumen.add(CalendarioComidaResponse.ComidaResumen.builder()
+                        .comidaId(comida.getId())
+                        .nombre(comida.getNombre())
+                        .tipoComida(planDia.getTipoComida() != null ? planDia.getTipoComida().getNombre() : null)
+                        .tipoComidaId(planDia.getTipoComida() != null ? planDia.getTipoComida().getId() : null)
+                        .calorias(nutricion.calorias)
+                        .registrada(registro != null)
+                        .registroId(registro != null ? registro.getId() : null)
+                        .build());
+            }
+            
+            // Actualizar totales
+            totalComidasProgramadas += comidasProgramadasDia;
+            totalComidasCompletadas += comidasCompletadasDia;
+            if (comidasCompletadasDia > 0) diasConRegistros++;
+            totalCalorias = totalCalorias.add(caloriasDia);
+            totalProteinas = totalProteinas.add(proteinasDia);
+            totalCarbos = totalCarbos.add(carbosDia);
+            totalGrasas = totalGrasas.add(grasasDia);
+            
+            // Obtener objetivo de calorías
+            BigDecimal caloriasObjetivo = plan.getObjetivo() != null && plan.getObjetivo().getCaloriasObjetivo() != null
+                    ? plan.getObjetivo().getCaloriasObjetivo() : BigDecimal.ZERO;
+            
+            dias.add(CalendarioComidaResponse.DiaCalendario.builder()
+                    .fecha(fecha)
+                    .diaSemana(fecha.getDayOfWeek().getValue())
+                    .nombreDia(obtenerNombreDia(fecha.getDayOfWeek().getValue()))
+                    .diaPlan(diaPlan)
+                    .comidasProgramadas(comidasProgramadasDia)
+                    .comidasCompletadas(comidasCompletadasDia)
+                    .diaCompleto(comidasProgramadasDia > 0 && comidasCompletadasDia == comidasProgramadasDia)
+                    .caloriasObjetivo(caloriasObjetivo)
+                    .caloriasConsumidas(caloriasDia.setScale(2, RoundingMode.HALF_UP))
+                    .proteinasConsumidas(proteinasDia.setScale(2, RoundingMode.HALF_UP))
+                    .carbohidratosConsumidos(carbosDia.setScale(2, RoundingMode.HALF_UP))
+                    .grasasConsumidas(grasasDia.setScale(2, RoundingMode.HALF_UP))
+                    .comidas(comidasResumen)
+                    .build());
+            
+            fechaActual = fechaActual.plusDays(1);
+        }
+
+        BigDecimal porcentajeCumplimiento = totalComidasProgramadas > 0
+                ? BigDecimal.valueOf((double) totalComidasCompletadas / totalComidasProgramadas * 100)
+                        .setScale(2, RoundingMode.HALF_UP)
+                : BigDecimal.ZERO;
+
+        return CalendarioComidaResponse.builder()
+                .fechaInicio(fechaInicio)
+                .fechaFin(fechaFin)
+                .nombrePlan(plan.getNombre())
+                .duracionPlanDias(duracionDias)
+                .diasConRegistros(diasConRegistros)
+                .totalComidasProgramadas(totalComidasProgramadas)
+                .totalComidasCompletadas(totalComidasCompletadas)
+                .porcentajeCumplimiento(porcentajeCumplimiento)
+                .caloriasConsumidasTotal(totalCalorias.setScale(2, RoundingMode.HALF_UP))
+                .proteinasConsumidasTotal(totalProteinas.setScale(2, RoundingMode.HALF_UP))
+                .carbohidratosConsumidosTotal(totalCarbos.setScale(2, RoundingMode.HALF_UP))
+                .grasasConsumidasTotal(totalGrasas.setScale(2, RoundingMode.HALF_UP))
+                .dias(dias)
+                .build();
+    }
+
+    // ============================================================
+    // Progreso Nutricional Semanal
+    // ============================================================
+
+    /**
+     * Obtiene el progreso nutricional semanal del usuario.
+     */
+    @Transactional(readOnly = true)
+    public ProgresoNutricionalResponse obtenerProgresoNutricional(Long perfilUsuarioId, LocalDate fechaReferencia) {
+        log.info("Obteniendo progreso nutricional para usuario {} en semana de {}", perfilUsuarioId, fechaReferencia);
+
+        // Calcular inicio y fin de la semana (lunes a domingo)
+        LocalDate inicioSemana = fechaReferencia.with(java.time.DayOfWeek.MONDAY);
+        LocalDate finSemana = fechaReferencia.with(java.time.DayOfWeek.SUNDAY);
+
+        // Verificar si hay plan activo
+        var optionalPlan = usuarioPlanRepository.findPlanActivoActual(perfilUsuarioId);
+        
+        if (optionalPlan.isEmpty()) {
+            return ProgresoNutricionalResponse.builder()
+                    .inicioSemana(inicioSemana)
+                    .finSemana(finSemana)
+                    .nombrePlan(null)
+                    .caloriasObjetivoSemanal(BigDecimal.ZERO)
+                    .proteinasObjetivoSemanal(BigDecimal.ZERO)
+                    .carbohidratosObjetivoSemanal(BigDecimal.ZERO)
+                    .grasasObjetivoSemanal(BigDecimal.ZERO)
+                    .caloriasConsumidasSemanal(BigDecimal.ZERO)
+                    .proteinasConsumidasSemanal(BigDecimal.ZERO)
+                    .carbohidratosConsumidosSemanal(BigDecimal.ZERO)
+                    .grasasConsumidasSemanal(BigDecimal.ZERO)
+                    .porcentajeCaloriasCumplido(BigDecimal.ZERO)
+                    .porcentajeProteinasCumplido(BigDecimal.ZERO)
+                    .porcentajeCarbohidratosCumplido(BigDecimal.ZERO)
+                    .porcentajeGrasasCumplido(BigDecimal.ZERO)
+                    .caloriasPromedioDiario(BigDecimal.ZERO)
+                    .proteinasPromedioDiario(BigDecimal.ZERO)
+                    .carbohidratosPromedioDiario(BigDecimal.ZERO)
+                    .grasasPromedioDiario(BigDecimal.ZERO)
+                    .diasConRegistro(0)
+                    .comidasRegistradas(0)
+                    .comidasProgramadas(0)
+                    .porcentajeComidasCumplido(BigDecimal.ZERO)
+                    .diasSemana(Collections.emptyList())
+                    .build();
+        }
+
+        UsuarioPlan planActivo = optionalPlan.get();
+        Plan plan = planActivo.getPlan();
+        int duracionDias = plan.getDuracionDias() != null ? plan.getDuracionDias() : 1;
+
+        // Obtener objetivos del plan
+        BigDecimal calObjetivoDia = plan.getObjetivo() != null && plan.getObjetivo().getCaloriasObjetivo() != null
+                ? plan.getObjetivo().getCaloriasObjetivo() : BigDecimal.ZERO;
+        BigDecimal protObjetivoDia = plan.getObjetivo() != null && plan.getObjetivo().getProteinasObjetivo() != null
+                ? plan.getObjetivo().getProteinasObjetivo() : BigDecimal.ZERO;
+        BigDecimal carbObjetivoDia = plan.getObjetivo() != null && plan.getObjetivo().getCarbohidratosObjetivo() != null
+                ? plan.getObjetivo().getCarbohidratosObjetivo() : BigDecimal.ZERO;
+        BigDecimal grasObjetivoDia = plan.getObjetivo() != null && plan.getObjetivo().getGrasasObjetivo() != null
+                ? plan.getObjetivo().getGrasasObjetivo() : BigDecimal.ZERO;
+
+        // Objetivos semanales (x7)
+        BigDecimal calObjetivoSemanal = calObjetivoDia.multiply(BigDecimal.valueOf(7));
+        BigDecimal protObjetivoSemanal = protObjetivoDia.multiply(BigDecimal.valueOf(7));
+        BigDecimal carbObjetivoSemanal = carbObjetivoDia.multiply(BigDecimal.valueOf(7));
+        BigDecimal grasObjetivoSemanal = grasObjetivoDia.multiply(BigDecimal.valueOf(7));
+
+        // Acumuladores
+        BigDecimal totalCalorias = BigDecimal.ZERO;
+        BigDecimal totalProteinas = BigDecimal.ZERO;
+        BigDecimal totalCarbos = BigDecimal.ZERO;
+        BigDecimal totalGrasas = BigDecimal.ZERO;
+        int diasConRegistro = 0;
+        int totalComidasRegistradas = 0;
+        int totalComidasProgramadas = 0;
+
+        // Generar lista de días
+        List<ProgresoNutricionalResponse.DiaNutricional> diasSemana = new java.util.ArrayList<>();
+        
+        LocalDate fechaActual = inicioSemana;
+        while (!fechaActual.isAfter(finSemana)) {
+            final LocalDate fecha = fechaActual;
+            
+            // Calcular día del plan
+            long diasDesdeInicio = java.time.temporal.ChronoUnit.DAYS.between(planActivo.getFechaInicio(), fecha);
+            int diaActual = (int) diasDesdeInicio + 1;
+            int diaPlan = diaActual <= duracionDias ? diaActual : ((diaActual - 1) % duracionDias) + 1;
+            
+            // Obtener comidas programadas y registradas
+            List<PlanDia> comidasDelDia = planDiaRepository.findByPlanIdAndNumeroDia(plan.getId(), diaPlan);
+            List<RegistroComida> registrosDelDia = registroComidaRepository
+                    .findByPerfilUsuarioIdAndFecha(perfilUsuarioId, fecha);
+            
+            int comidasProgramadasDia = comidasDelDia.size();
+            int comidasRegistradasDia = 0;
+            BigDecimal caloriasDia = BigDecimal.ZERO;
+            BigDecimal proteinasDia = BigDecimal.ZERO;
+            BigDecimal carbosDia = BigDecimal.ZERO;
+            BigDecimal grasasDia = BigDecimal.ZERO;
+            
+            // Calcular nutrición del día
+            for (RegistroComida registro : registrosDelDia) {
+                comidasRegistradasDia++;
+                BigDecimal porciones = registro.getPorciones() != null ? registro.getPorciones() : BigDecimal.ONE;
+                NutricionComida nutricion = calcularNutricionComida(registro.getComida());
+                caloriasDia = caloriasDia.add(nutricion.calorias.multiply(porciones));
+                proteinasDia = proteinasDia.add(nutricion.proteinas.multiply(porciones));
+                carbosDia = carbosDia.add(nutricion.carbohidratos.multiply(porciones));
+                grasasDia = grasasDia.add(nutricion.grasas.multiply(porciones));
+            }
+            
+            // Actualizar totales
+            totalComidasProgramadas += comidasProgramadasDia;
+            totalComidasRegistradas += comidasRegistradasDia;
+            if (comidasRegistradasDia > 0) diasConRegistro++;
+            totalCalorias = totalCalorias.add(caloriasDia);
+            totalProteinas = totalProteinas.add(proteinasDia);
+            totalCarbos = totalCarbos.add(carbosDia);
+            totalGrasas = totalGrasas.add(grasasDia);
+            
+            diasSemana.add(ProgresoNutricionalResponse.DiaNutricional.builder()
+                    .fecha(fecha)
+                    .nombreDia(obtenerNombreDia(fecha.getDayOfWeek().getValue()))
+                    .diaSemana(fecha.getDayOfWeek().getValue())
+                    .caloriasObjetivo(calObjetivoDia)
+                    .proteinasObjetivo(protObjetivoDia)
+                    .carbohidratosObjetivo(carbObjetivoDia)
+                    .grasasObjetivo(grasObjetivoDia)
+                    .caloriasConsumidas(caloriasDia.setScale(2, RoundingMode.HALF_UP))
+                    .proteinasConsumidas(proteinasDia.setScale(2, RoundingMode.HALF_UP))
+                    .carbohidratosConsumidos(carbosDia.setScale(2, RoundingMode.HALF_UP))
+                    .grasasConsumidas(grasasDia.setScale(2, RoundingMode.HALF_UP))
+                    .comidasRegistradas(comidasRegistradasDia)
+                    .comidasProgramadas(comidasProgramadasDia)
+                    .diaCompleto(comidasProgramadasDia > 0 && comidasRegistradasDia == comidasProgramadasDia)
+                    .build());
+            
+            fechaActual = fechaActual.plusDays(1);
+        }
+
+        // Calcular porcentajes de cumplimiento
+        BigDecimal pctCalorias = calObjetivoSemanal.compareTo(BigDecimal.ZERO) > 0
+                ? totalCalorias.divide(calObjetivoSemanal, 4, RoundingMode.HALF_UP)
+                        .multiply(BigDecimal.valueOf(100)).setScale(2, RoundingMode.HALF_UP)
+                : BigDecimal.ZERO;
+        BigDecimal pctProteinas = protObjetivoSemanal.compareTo(BigDecimal.ZERO) > 0
+                ? totalProteinas.divide(protObjetivoSemanal, 4, RoundingMode.HALF_UP)
+                        .multiply(BigDecimal.valueOf(100)).setScale(2, RoundingMode.HALF_UP)
+                : BigDecimal.ZERO;
+        BigDecimal pctCarbos = carbObjetivoSemanal.compareTo(BigDecimal.ZERO) > 0
+                ? totalCarbos.divide(carbObjetivoSemanal, 4, RoundingMode.HALF_UP)
+                        .multiply(BigDecimal.valueOf(100)).setScale(2, RoundingMode.HALF_UP)
+                : BigDecimal.ZERO;
+        BigDecimal pctGrasas = grasObjetivoSemanal.compareTo(BigDecimal.ZERO) > 0
+                ? totalGrasas.divide(grasObjetivoSemanal, 4, RoundingMode.HALF_UP)
+                        .multiply(BigDecimal.valueOf(100)).setScale(2, RoundingMode.HALF_UP)
+                : BigDecimal.ZERO;
+
+        BigDecimal pctComidas = totalComidasProgramadas > 0
+                ? BigDecimal.valueOf((double) totalComidasRegistradas / totalComidasProgramadas * 100)
+                        .setScale(2, RoundingMode.HALF_UP)
+                : BigDecimal.ZERO;
+
+        // Promedios diarios (sobre días con registro)
+        int diasParaPromedio = diasConRegistro > 0 ? diasConRegistro : 1;
+        BigDecimal calPromedio = totalCalorias.divide(BigDecimal.valueOf(diasParaPromedio), 2, RoundingMode.HALF_UP);
+        BigDecimal protPromedio = totalProteinas.divide(BigDecimal.valueOf(diasParaPromedio), 2, RoundingMode.HALF_UP);
+        BigDecimal carbPromedio = totalCarbos.divide(BigDecimal.valueOf(diasParaPromedio), 2, RoundingMode.HALF_UP);
+        BigDecimal grasPromedio = totalGrasas.divide(BigDecimal.valueOf(diasParaPromedio), 2, RoundingMode.HALF_UP);
+
+        return ProgresoNutricionalResponse.builder()
+                .inicioSemana(inicioSemana)
+                .finSemana(finSemana)
+                .nombrePlan(plan.getNombre())
+                .caloriasObjetivoSemanal(calObjetivoSemanal)
+                .proteinasObjetivoSemanal(protObjetivoSemanal)
+                .carbohidratosObjetivoSemanal(carbObjetivoSemanal)
+                .grasasObjetivoSemanal(grasObjetivoSemanal)
+                .caloriasConsumidasSemanal(totalCalorias.setScale(2, RoundingMode.HALF_UP))
+                .proteinasConsumidasSemanal(totalProteinas.setScale(2, RoundingMode.HALF_UP))
+                .carbohidratosConsumidosSemanal(totalCarbos.setScale(2, RoundingMode.HALF_UP))
+                .grasasConsumidasSemanal(totalGrasas.setScale(2, RoundingMode.HALF_UP))
+                .porcentajeCaloriasCumplido(pctCalorias)
+                .porcentajeProteinasCumplido(pctProteinas)
+                .porcentajeCarbohidratosCumplido(pctCarbos)
+                .porcentajeGrasasCumplido(pctGrasas)
+                .caloriasPromedioDiario(calPromedio)
+                .proteinasPromedioDiario(protPromedio)
+                .carbohidratosPromedioDiario(carbPromedio)
+                .grasasPromedioDiario(grasPromedio)
+                .diasConRegistro(diasConRegistro)
+                .comidasRegistradas(totalComidasRegistradas)
+                .comidasProgramadas(totalComidasProgramadas)
+                .porcentajeComidasCumplido(pctComidas)
+                .diasSemana(diasSemana)
+                .build();
+    }
+
+    // ============================================================
+    // Registrar Comida Extra (no del plan)
+    // ============================================================
+
+    /**
+     * Registra una comida extra que no estaba en el plan.
+     * Puede ser una comida del catálogo o una comida manual.
+     */
+    @Transactional
+    public RegistroComidaResponse registrarComidaExtra(Long perfilUsuarioId, RegistroComidaExtraRequest request) {
+        log.info("Registrando comida extra para usuario {}", perfilUsuarioId);
+
+        PerfilUsuario perfil = perfilUsuarioRepository.findById(perfilUsuarioId)
+                .orElseThrow(() -> new EntityNotFoundException("Perfil de usuario no encontrado"));
+
+        // Obtener plan activo (si existe, para asociar el registro)
+        UsuarioPlan usuarioPlan = usuarioPlanRepository.findPlanActivoActual(perfilUsuarioId).orElse(null);
+
+        // Resolver comida
+        Comida comida;
+        if (request.getComidaId() != null) {
+            // Comida del catálogo
+            comida = comidaRepository.findById(request.getComidaId())
+                    .orElseThrow(() -> new EntityNotFoundException("Comida no encontrada"));
+        } else if (request.getNombreComida() != null && !request.getNombreComida().isBlank()) {
+            // Comida manual - crear una comida temporal o buscar por nombre
+            comida = comidaRepository.findByNombreIgnoreCase(request.getNombreComida())
+                    .orElseGet(() -> {
+                        // Si no existe, crear una comida nueva (simple, sin ingredientes)
+                        Comida nuevaComida = Comida.builder()
+                                .nombre(request.getNombreComida())
+                                .descripcion(request.getDescripcion())
+                                .activo(true)
+                                .build();
+                        return comidaRepository.save(nuevaComida);
+                    });
+        } else {
+            throw new BusinessException("Debe especificar una comida del catálogo (comidaId) o un nombre de comida");
+        }
+
+        // Resolver tipo de comida
+        TipoComidaEntity tipoComida = null;
+        if (request.getTipoComidaId() != null) {
+            tipoComida = tipoComidaRepository.findById(request.getTipoComidaId())
+                    .orElseThrow(() -> new EntityNotFoundException("Tipo de comida no encontrado"));
+        } else if (request.getTipoComidaNombre() != null) {
+            tipoComida = tipoComidaRepository.findByNombreIgnoreCase(request.getTipoComidaNombre())
+                    .orElseThrow(() -> new EntityNotFoundException("Tipo de comida no encontrado: " + request.getTipoComidaNombre()));
+        }
+
+        // Calcular calorías
+        BigDecimal calorias;
+        if (request.getCalorias() != null && request.getCalorias().compareTo(BigDecimal.ZERO) > 0) {
+            calorias = request.getCalorias();
+        } else {
+            NutricionComida nutricion = calcularNutricionComida(comida);
+            calorias = nutricion.calorias;
+        }
+
+        BigDecimal porciones = request.getPorciones() != null ? request.getPorciones() : BigDecimal.ONE;
+
+        RegistroComida registro = RegistroComida.builder()
+                .perfilUsuario(perfil)
+                .comida(comida)
+                .usuarioPlan(usuarioPlan)
+                .fecha(request.getFecha() != null ? request.getFecha() : LocalDate.now())
+                .hora(request.getHora() != null ? request.getHora() : LocalTime.now())
+                .tipoComida(tipoComida)
+                .porciones(porciones)
+                .caloriasConsumidas(calorias.multiply(porciones))
+                .notas(request.getNotas())
+                .build();
+
+        registro = registroComidaRepository.save(registro);
+        log.info("Comida extra registrada exitosamente con ID {}", registro.getId());
+
+        return RegistroComidaResponse.fromEntity(registro);
     }
 }

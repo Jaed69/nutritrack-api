@@ -13,6 +13,12 @@ import java.time.LocalTime;
 /**
  * DTO de request para registrar un ejercicio.
  * Módulo 5: US-22 - Marcar Actividad como Completada
+ * 
+ * Nota: Los campos series, repeticiones y duracionMinutos son opcionales
+ * porque no todos los ejercicios requieren todos estos valores:
+ * - Ejercicios de fuerza: series + repeticiones (sin duración)
+ * - Ejercicios de cardio: duración (sin series/repeticiones)
+ * - Ejercicios isométricos: series + duración (sin repeticiones)
  */
 @Data
 @NoArgsConstructor
@@ -34,20 +40,20 @@ public class RegistroEjercicioRequest {
     @Schema(description = "Hora del ejercicio (HH:mm:ss)", example = "18:30:00")
     private LocalTime hora;
 
-    @Positive(message = "Las series deben ser un número positivo")
-    @Schema(description = "Número de series realizadas", example = "3")
+    @PositiveOrZero(message = "Las series deben ser un número positivo o cero")
+    @Schema(description = "Número de series realizadas (opcional para cardio)", example = "3")
     private Integer series;
 
-    @Positive(message = "Las repeticiones deben ser un número positivo")
-    @Schema(description = "Repeticiones por serie", example = "10")
+    @PositiveOrZero(message = "Las repeticiones deben ser un número positivo o cero")
+    @Schema(description = "Repeticiones por serie (opcional para cardio/isométricos)", example = "10")
     private Integer repeticiones;
 
     @PositiveOrZero(message = "El peso debe ser un número positivo o cero")
     @Schema(description = "Peso utilizado en kg", example = "20.0")
     private BigDecimal pesoKg;
 
-    @Positive(message = "La duración debe ser un número positivo")
-    @Schema(description = "Duración total en minutos", example = "15")
+    @PositiveOrZero(message = "La duración debe ser un número positivo o cero")
+    @Schema(description = "Duración total en minutos (opcional para ejercicios de repeticiones)", example = "15")
     private Integer duracionMinutos;
 
     @Size(max = 500, message = "Las notas no pueden exceder 500 caracteres")

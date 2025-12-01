@@ -13,6 +13,9 @@ import java.time.LocalTime;
 /**
  * DTO de respuesta para un registro de comida.
  * Módulo 5: US-21, US-22, US-23
+ * 
+ * MIGRACIÓN: tipoComida ahora es String (nombre) y tipoComidaId (ID)
+ * en lugar del enum.
  */
 @Data
 @Builder
@@ -26,7 +29,8 @@ public class RegistroComidaResponse {
     private Long usuarioPlanId;
     private LocalDate fecha;
     private LocalTime hora;
-    private RegistroComida.TipoComida tipoComida;
+    private Long tipoComidaId;
+    private String tipoComida;
     private BigDecimal porciones;
     private BigDecimal caloriasConsumidas;
     private String notas;
@@ -39,7 +43,8 @@ public class RegistroComidaResponse {
                 .usuarioPlanId(registro.getUsuarioPlan() != null ? registro.getUsuarioPlan().getId() : null)
                 .fecha(registro.getFecha())
                 .hora(registro.getHora())
-                .tipoComida(registro.getTipoComida())
+                .tipoComidaId(registro.getTipoComida() != null ? registro.getTipoComida().getId() : null)
+                .tipoComida(registro.getTipoComida() != null ? registro.getTipoComida().getNombre() : null)
                 .porciones(registro.getPorciones())
                 .caloriasConsumidas(registro.getCaloriasConsumidas())
                 .notas(registro.getNotas())
