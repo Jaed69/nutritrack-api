@@ -22,6 +22,7 @@ public class StartupService implements CommandLineRunner {
     private final PerfilUsuarioRepository perfilUsuarioRepository;
     private final UsuarioPerfilSaludRepository usuarioPerfilSaludRepository;
     private final UsuarioHistorialMedidasRepository usuarioHistorialMedidasRepository;
+    private final TipoComidaRepository tipoComidaRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -29,10 +30,46 @@ public class StartupService implements CommandLineRunner {
     public void run(String... args) {
         log.info("🚀 Iniciando NutriTrack API...");
         initializeRoles();
+        initializeTiposComida();
         initializeAdminUser();
         initializeDemoUser();
         initializeDemoData();
         log.info("✅ Aplicación lista!");
+    }
+
+    /**
+     * Inicializa los tipos de comida por defecto.
+     * Estos son necesarios para crear comidas, planes y registros.
+     */
+    private void initializeTiposComida() {
+        if (tipoComidaRepository.count() == 0) {
+            log.info("🍽️ Creando tipos de comida por defecto...");
+            
+            String[][] tiposComida = {
+                {"DESAYUNO", "Primera comida del día", "1"},
+                {"ALMUERZO", "Comida del mediodía", "2"},
+                {"CENA", "Última comida principal del día", "3"},
+                {"SNACK", "Merienda o bocadillo", "4"},
+                {"MERIENDA", "Comida ligera entre comidas principales", "5"},
+                {"PRE_ENTRENAMIENTO", "Comida antes del ejercicio", "6"},
+                {"POST_ENTRENAMIENTO", "Comida después del ejercicio", "7"},
+                {"COLACION", "Refrigerio ligero", "8"}
+            };
+            
+            for (String[] tipo : tiposComida) {
+                TipoComidaEntity tipoComida = TipoComidaEntity.builder()
+                        .nombre(tipo[0])
+                        .descripcion(tipo[1])
+                        .ordenVisualizacion(Integer.parseInt(tipo[2]))
+                        .activo(true)
+                        .build();
+                tipoComidaRepository.save(tipoComida);
+            }
+            
+            log.info("✅ Tipos de comida creados: DESAYUNO, ALMUERZO, CENA, SNACK, MERIENDA, PRE_ENTRENAMIENTO, POST_ENTRENAMIENTO, COLACION");
+        } else {
+            log.info("ℹ️ Tipos de comida ya existen en la base de datos");
+        }
     }
 
     private void initializeRoles() {
