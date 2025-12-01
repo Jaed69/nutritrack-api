@@ -1153,7 +1153,6 @@ public class RegistroService {
                         Comida nuevaComida = Comida.builder()
                                 .nombre(request.getNombreComida())
                                 .descripcion(request.getDescripcion())
-                                .activo(true)
                                 .build();
                         return comidaRepository.save(nuevaComida);
                     });
